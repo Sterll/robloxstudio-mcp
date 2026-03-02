@@ -210,6 +210,8 @@ export class RobloxStudioMCPServer {
             return await this.tools.insertAsset((args as any)?.assetId as number, (args as any)?.parentPath, (args as any)?.position);
           case 'preview_asset':
             return await this.tools.previewAsset((args as any)?.assetId as number, (args as any)?.includeProperties, (args as any)?.maxDepth);
+          case 'capture_screenshot':
+            return await this.tools.captureScreenshot();
 
           default:
             throw new McpError(

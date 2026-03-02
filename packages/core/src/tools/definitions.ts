@@ -1363,6 +1363,15 @@ part(0,2,0,2,1,1,"b")`,
       required: ['assetId']
     }
   },
+  {
+    name: 'capture_screenshot',
+    category: 'read',
+    description: 'Capture a screenshot of the Roblox Studio viewport and return it as a PNG image. Requires EditableImage API to be enabled: Game Settings > Security > "Allow Mesh / Image APIs". Only works in Edit mode with the viewport visible.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    }
+  },
 ];
 
 export const getReadOnlyTools = () => TOOL_DEFINITIONS.filter(t => t.category === 'read');

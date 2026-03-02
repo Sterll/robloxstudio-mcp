@@ -2,6 +2,7 @@ import { StudioHttpClient } from './studio-client.js';
 import { BridgeService } from '../bridge-service.js';
 import { runBuildExecutor } from './build-executor.js';
 import { OpenCloudClient } from '../opencloud-client.js';
+import { rgbaToPng } from '../png-encoder.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -1266,6 +1267,36 @@ export class RobloxStudioTools {
       content: [{
         type: 'text',
         text: JSON.stringify(response)
+      }]
+    };
+  }
+
+  async captureScreenshot() {
+    const response = await this.client.request('/api/capture-screenshot', {}) as {
+      success?: boolean;
+      error?: string;
+      width?: number;
+      height?: number;
+      data?: string;
+    };
+
+    if (response.error) {
+      return {
+        content: [{
+          type: 'text',
+          text: response.error,
+        }]
+      };
+    }
+
+    const rgbaBuffer = Buffer.from(response.data!, 'base64');
+    const pngBuffer = rgbaToPng(rgbaBuffer, response.width!, response.height!);
+
+    return {
+      content: [{
+        type: 'image',
+        data: pngBuffer.toString('base64'),
+        mimeType: 'image/png',
       }]
     };
   }
