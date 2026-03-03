@@ -1,6 +1,7 @@
 const CaptureService = game.GetService("CaptureService");
 const AssetService = game.GetService("AssetService");
 
+const MAX_TILE_SIZE = 1024;
 const BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 function encodeBase64(buf: buffer): string {
@@ -46,6 +47,25 @@ function encodeBase64(buf: buffer): string {
 	return parts.join("");
 }
 
+function readPixelsTiled(img: EditableImage, w: number, h: number): buffer {
+	const BYTES_PER_PIXEL = 4;
+	const fullBuf = buffer.create(w * h * BYTES_PER_PIXEL);
+	const fullRowBytes = w * BYTES_PER_PIXEL;
+
+	for (let ty = 0; ty < h; ty += MAX_TILE_SIZE) {
+		const tileH = math.min(MAX_TILE_SIZE, h - ty);
+		for (let tx = 0; tx < w; tx += MAX_TILE_SIZE) {
+			const tileW = math.min(MAX_TILE_SIZE, w - tx);
+			const tileBuf = img.ReadPixelsBuffer(new Vector2(tx, ty), new Vector2(tileW, tileH));
+			const tileRowBytes = tileW * BYTES_PER_PIXEL;
+			for (let row = 0; row < tileH; row++) {
+				buffer.copy(fullBuf, (ty + row) * fullRowBytes + tx * BYTES_PER_PIXEL, tileBuf, row * tileRowBytes, tileRowBytes);
+			}
+		}
+	}
+	return fullBuf;
+}
+
 function captureScreenshot(): unknown {
 	let contentId: string | undefined;
 
@@ -74,12 +94,12 @@ function captureScreenshot(): unknown {
 	}
 
 	const editableImage = editableResult as EditableImage;
-	const size = editableImage.Size;
-	const w = math.floor(size.X);
-	const h = math.floor(size.Y);
+	const imgSize = editableImage.Size;
+	const w = math.floor(imgSize.X);
+	const h = math.floor(imgSize.Y);
 
 	const [readOk, pixelBuffer] = pcall(() => {
-		return editableImage.ReadPixelsBuffer(Vector2.zero, editableImage.Size);
+		return readPixelsTiled(editableImage, w, h);
 	});
 
 	editableImage.Destroy();

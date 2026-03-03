@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
-import { readFileSync, readdirSync, writeFileSync, existsSync, statSync } from 'fs';
+import { readFileSync, readdirSync, writeFileSync, copyFileSync, existsSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join, basename } from 'path';
+import { homedir } from 'os';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
@@ -168,3 +169,10 @@ const moduleCount = countModules(modulesDir);
 const includeCount = countModules(includeDir);
 const rbxtsCount = countModules(nodeModulesRbxtsDir);
 console.log(`Built studio-plugin/MCPPlugin.rbxmx (${moduleCount} modules${includeCount > 0 ? `, ${includeCount} runtime includes` : ''}${rbxtsCount > 0 ? `, ${rbxtsCount} @rbxts packages` : ''})`);
+
+const pluginsDir = join(homedir(), 'AppData', 'Local', 'Roblox', 'Plugins');
+if (existsSync(pluginsDir)) {
+  const installPath = join(pluginsDir, 'MCPPlugin.rbxmx');
+  copyFileSync(outputPath, installPath);
+  console.log(`Installed to ${installPath}`);
+}
