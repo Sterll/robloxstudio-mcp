@@ -985,6 +985,12 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         },
         palette: {
           type: 'object',
+          additionalProperties: {
+            type: 'array',
+            items: { type: 'string' },
+            minItems: 2,
+            maxItems: 3
+          },
           description: 'Map of short keys to [BrickColor, Material] or [BrickColor, Material, MaterialVariant] tuples. E.g. {"a": ["Dark stone grey", "Concrete"], "b": ["Brown", "Wood", "MyCustomWood"]}'
         },
         parts: {
@@ -1066,6 +1072,12 @@ part(0,2,0,2,1,1,"b")`,
         },
         palette: {
           type: 'object',
+          additionalProperties: {
+            type: 'array',
+            items: { type: 'string' },
+            minItems: 2,
+            maxItems: 3
+          },
           description: 'Map of short keys to [BrickColor, Material] or [BrickColor, Material, MaterialVariant] tuples. E.g. {"a": ["Dark stone grey", "Cobblestone"], "b": ["Brown", "WoodPlanks", "MyCustomWood"]}. MaterialVariant is optional — use it to reference custom materials from MaterialService.'
         },
         code: {
@@ -1362,6 +1374,29 @@ part(0,2,0,2,1,1,"b")`,
       },
       required: ['assetId']
     }
+  },
+  {
+    name: 'batch_execute',
+    category: 'write',
+    description: 'Execute multiple operations in a single round-trip. Returns an array of results in the same order as operations.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        operations: {
+          type: 'array',
+          description: 'List of operations to execute sequentially',
+          items: {
+            type: 'object',
+            properties: {
+              tool: { type: 'string', description: 'Tool name (e.g. "create_object", "set_property")' },
+              args: { type: 'object', description: 'Arguments for the tool', additionalProperties: true },
+            },
+            required: ['tool', 'args'],
+          },
+        },
+      },
+      required: ['operations'],
+    },
   },
 ];
 

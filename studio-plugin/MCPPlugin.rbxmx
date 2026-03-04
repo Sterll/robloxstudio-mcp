@@ -116,6 +116,42 @@ local function processRequest(request)
 		}
 	end
 end
+local function batchExecute(requestData)
+	local operations = requestData.operations
+	if not operations or not (type(operations) == "table") then
+		return {
+			error = "operations array is required",
+		}
+	end
+	local results = {}
+	local allSucceeded = true
+	for _, op in operations do
+		local ok, result = pcall(function()
+			return processRequest({
+				endpoint = op.endpoint,
+				data = op.data or {},
+			})
+		end)
+		if ok then
+			table.insert(results, result)
+			if type(result) == "table" and result.error ~= nil then
+				allSucceeded = false
+			end
+		else
+			local _arg0 = {
+				error = tostring(result),
+			}
+			table.insert(results, _arg0)
+			allSucceeded = false
+		end
+	end
+	return {
+		results = results,
+		allSucceeded = allSucceeded,
+		count = #operations,
+	}
+end
+routeMap["/api/batch-execute"] = batchExecute
 local function sendResponse(conn, requestId, responseData)
 	pcall(function()
 		HttpService:RequestAsync({

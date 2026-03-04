@@ -85,6 +85,35 @@ function processRequest(request: RequestPayload): unknown {
 	}
 }
 
+function batchExecute(requestData: Record<string, unknown>): unknown {
+	const operations = requestData.operations as Array<{ endpoint: string; data: Record<string, unknown> }>;
+	if (!operations || !typeIs(operations, "table")) {
+		return { error: "operations array is required" };
+	}
+
+	const results: defined[] = [];
+	let allSucceeded = true;
+
+	for (const op of operations) {
+		const [ok, result] = pcall(() =>
+			processRequest({ endpoint: op.endpoint, data: op.data ?? {} })
+		);
+		if (ok) {
+			results.push(result as defined);
+			if (typeIs(result, "table") && (result as Record<string, unknown>).error !== undefined) {
+				allSucceeded = false;
+			}
+		} else {
+			results.push({ error: tostring(result) });
+			allSucceeded = false;
+		}
+	}
+
+	return { results, allSucceeded, count: (operations as defined[]).size() };
+}
+
+routeMap["/api/batch-execute"] = batchExecute;
+
 function sendResponse(conn: Connection, requestId: string, responseData: unknown) {
 	pcall(() => {
 		HttpService.RequestAsync({

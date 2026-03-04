@@ -1269,4 +1269,23 @@ export class RobloxStudioTools {
       }]
     };
   }
+
+  async batchExecute(operations: Array<{ tool: string; args: Record<string, unknown> }>) {
+    if (!operations || operations.length === 0) {
+      throw new Error('Operations array is required for batch_execute');
+    }
+    const pluginOps = operations.map(op => ({
+      endpoint: `/api/${op.tool.replace(/_/g, '-')}`,
+      data: op.args,
+    }));
+    const response = await this.client.request('/api/batch-execute', { operations: pluginOps });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response),
+        },
+      ],
+    };
+  }
 }

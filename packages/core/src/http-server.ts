@@ -72,6 +72,7 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   get_asset_thumbnail: (tools, body) => tools.getAssetThumbnail(body.assetId, body.size),
   insert_asset: (tools, body) => tools.insertAsset(body.assetId, body.parentPath, body.position),
   preview_asset: (tools, body) => tools.previewAsset(body.assetId, body.includeProperties, body.maxDepth),
+  batch_execute: (tools, body) => tools.batchExecute(body.operations),
 };
 
 export function createHttpServer(tools: RobloxStudioTools, bridge: BridgeService, allowedTools?: Set<string>) {
@@ -150,10 +151,10 @@ export function createHttpServer(tools: RobloxStudioTools, bridge: BridgeService
   });
 
 
+  const LONG_POLL_TIMEOUT_MS = 25000;
+
   app.get('/poll', (req, res) => {
-    if (!pluginConnected) {
-      pluginConnected = true;
-    }
+    if (!pluginConnected) pluginConnected = true;
     lastPluginActivity = Date.now();
 
     if (!isMCPServerActive()) {
@@ -175,14 +176,38 @@ export function createHttpServer(tools: RobloxStudioTools, bridge: BridgeService
         pluginConnected: true,
         proxyInstanceCount: proxyInstances.size
       });
-    } else {
-      res.json({
-        request: null,
-        mcpConnected: true,
-        pluginConnected: true,
-        proxyInstanceCount: proxyInstances.size
-      });
+      return;
     }
+
+    let resolved = false;
+
+    const timeout = setTimeout(() => {
+      if (resolved) return;
+      resolved = true;
+      bridge.removeListener('request', onRequest);
+      res.json({ request: null, mcpConnected: true, pluginConnected: true, proxyInstanceCount: proxyInstances.size });
+    }, LONG_POLL_TIMEOUT_MS);
+
+    const onRequest = () => {
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(timeout);
+      const pending = bridge.getPendingRequest();
+      if (pending) {
+        res.json({ request: pending.request, requestId: pending.requestId, mcpConnected: true, pluginConnected: true, proxyInstanceCount: proxyInstances.size });
+      } else {
+        res.json({ request: null, mcpConnected: true, pluginConnected: true, proxyInstanceCount: proxyInstances.size });
+      }
+    };
+
+    bridge.once('request', onRequest);
+
+    req.on('close', () => {
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(timeout);
+      bridge.removeListener('request', onRequest);
+    });
   });
 
 
