@@ -86,15 +86,16 @@ function processRequest(request: RequestPayload): unknown {
 }
 
 function batchExecute(requestData: Record<string, unknown>): unknown {
-	const operations = requestData.operations as Array<{ endpoint: string; data: Record<string, unknown> }>;
+	const operations = requestData.operations;
 	if (!operations || !typeIs(operations, "table")) {
 		return { error: "operations array is required" };
 	}
+	const typedOperations = operations as Array<{ endpoint: string; data?: Record<string, unknown> }>;
 
 	const results: defined[] = [];
 	let allSucceeded = true;
 
-	for (const op of operations) {
+	for (const op of typedOperations) {
 		const [ok, result] = pcall(() =>
 			processRequest({ endpoint: op.endpoint, data: op.data ?? {} })
 		);
@@ -109,7 +110,7 @@ function batchExecute(requestData: Record<string, unknown>): unknown {
 		}
 	}
 
-	return { results, allSucceeded, count: (operations as defined[]).size() };
+	return { results, allSucceeded, count: typedOperations.size() };
 }
 
 routeMap["/api/batch-execute"] = batchExecute;
