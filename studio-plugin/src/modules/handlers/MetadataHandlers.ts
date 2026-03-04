@@ -440,6 +440,11 @@ function setCamera(requestData: Record<string, unknown>) {
 
 	const posRaw = requestData.position as number[] | undefined;
 	const lookAtRaw = requestData.lookAt as number[] | undefined;
+	const fovValue = requestData.fov as number | undefined;
+
+	if (!posRaw && fovValue === undefined) {
+		return { success: true, position: [] as number[], fov: camera.FieldOfView, message: "No parameters provided, camera unchanged" };
+	}
 
 	const recordingId = beginRecording("Set camera");
 	const [success, err] = pcall(() => {
@@ -452,14 +457,15 @@ function setCamera(requestData: Record<string, unknown>) {
 				camera.CFrame = new CFrame(pos);
 			}
 		}
-		if (requestData.fov !== undefined) camera.FieldOfView = requestData.fov as number;
+		if (fovValue !== undefined) camera.FieldOfView = fovValue;
 	});
-	finishRecording(recordingId, success);
 
 	if (success) {
+		finishRecording(recordingId, true);
 		const p = camera.CFrame.Position;
 		return { success: true, position: [p.X, p.Y, p.Z], fov: camera.FieldOfView };
 	}
+	finishRecording(recordingId, false);
 	return { error: `Failed to set camera: ${tostring(err)}` };
 }
 
