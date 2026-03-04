@@ -71,6 +71,8 @@ const routeMap: Record<string, Handler> = {
 	"/api/redo": MetadataHandlers.redo,
 	"/api/get-context": MetadataHandlers.getContext,
 	"/api/get-deep-snapshot": MetadataHandlers.getDeepSnapshot,
+	"/api/get-camera": MetadataHandlers.getCamera,
+	"/api/set-camera": MetadataHandlers.setCamera,
 
 	"/api/start-playtest": TestHandlers.startPlaytest,
 	"/api/stop-playtest": TestHandlers.stopPlaytest,

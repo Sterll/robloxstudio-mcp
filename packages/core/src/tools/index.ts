@@ -1450,4 +1450,14 @@ export class RobloxStudioTools {
     const response = await this.client.request('/api/execute-luau-wait', { code });
     return { content: [{ type: 'text', text: JSON.stringify(response) }] };
   }
+
+  async getCamera() {
+    const response = await this.client.request('/api/get-camera', {});
+    return { content: [{ type: 'text', text: JSON.stringify(response) }] };
+  }
+
+  async setCamera(position?: number[], lookAt?: number[], fov?: number) {
+    const response = await this.client.request('/api/set-camera', { position, lookAt, fov });
+    return { content: [{ type: 'text', text: JSON.stringify(response) }] };
+  }
 }

@@ -102,6 +102,8 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   get_all_scripts: (tools, body) => tools.getAllScripts(body.includeSource as boolean | undefined),
   find_references: (tools, body) => tools.findReferences(body.query as string),
   execute_luau_wait: (tools, body) => tools.executeLuauWait(body.code as string),
+  get_camera: (tools) => tools.getCamera(),
+  set_camera: (tools, body) => tools.setCamera(body.position as number[] | undefined, body.lookAt as number[] | undefined, body.fov as number | undefined),
 };
 
 export function createHttpServer(tools: RobloxStudioTools, bridge: BridgeService, allowedTools?: Set<string>) {

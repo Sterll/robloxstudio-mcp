@@ -417,6 +417,52 @@ function executeLuau(requestData: Record<string, unknown>) {
 	}
 }
 
+function getCamera(_requestData: Record<string, unknown>) {
+	const camera = game.Workspace.CurrentCamera;
+	if (!camera) return { error: "No camera found" };
+
+	const cf = camera.CFrame;
+	const pos = cf.Position;
+	const lookVec = cf.LookVector;
+
+	return {
+		success: true,
+		position: [pos.X, pos.Y, pos.Z],
+		lookVector: [lookVec.X, lookVec.Y, lookVec.Z],
+		fov: camera.FieldOfView,
+		cameraType: tostring(camera.CameraType),
+	};
+}
+
+function setCamera(requestData: Record<string, unknown>) {
+	const camera = game.Workspace.CurrentCamera;
+	if (!camera) return { error: "No camera found" };
+
+	const posRaw = requestData.position as number[] | undefined;
+	const lookAtRaw = requestData.lookAt as number[] | undefined;
+
+	const recordingId = beginRecording("Set camera");
+	const [success, err] = pcall(() => {
+		if (posRaw) {
+			const pos = new Vector3(posRaw[0] ?? 0, posRaw[1] ?? 0, posRaw[2] ?? 0);
+			if (lookAtRaw) {
+				const lookAt = new Vector3(lookAtRaw[0] ?? 0, lookAtRaw[1] ?? 0, lookAtRaw[2] ?? 0);
+				camera.CFrame = CFrame.lookAt(pos, lookAt);
+			} else {
+				camera.CFrame = new CFrame(pos);
+			}
+		}
+		if (requestData.fov !== undefined) camera.FieldOfView = requestData.fov as number;
+	});
+	finishRecording(recordingId, success);
+
+	if (success) {
+		const p = camera.CFrame.Position;
+		return { success: true, position: [p.X, p.Y, p.Z], fov: camera.FieldOfView };
+	}
+	return { error: `Failed to set camera: ${tostring(err)}` };
+}
+
 function undo(_requestData: Record<string, unknown>) {
 	const [success, result] = pcall(() => {
 		ChangeHistoryService.Undo();
@@ -458,4 +504,6 @@ export = {
 	executeLuau,
 	undo,
 	redo,
+	getCamera,
+	setCamera,
 };

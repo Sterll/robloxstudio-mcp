@@ -1698,6 +1698,27 @@ part(0,2,0,2,1,1,"b")`,
       required: ['path'],
     },
   },
+
+  // === Camera Tools ===
+  {
+    name: 'get_camera',
+    description: 'Get current Studio camera position, look vector, and FOV',
+    category: 'read' as ToolCategory,
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'set_camera',
+    description: 'Move the Studio camera to a position, optionally looking at a target',
+    category: 'write' as ToolCategory,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        position: { type: 'array', items: { type: 'number' }, description: '[x, y, z] camera position' },
+        lookAt: { type: 'array', items: { type: 'number' }, description: '[x, y, z] point to look at (optional)' },
+        fov: { type: 'number', description: 'Field of view in degrees (optional)' },
+      },
+    },
+  },
 ];
 
 export const getReadOnlyTools = () => TOOL_DEFINITIONS.filter(t => t.category === 'read');
