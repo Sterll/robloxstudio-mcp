@@ -53,6 +53,9 @@ const routeMap: Record<string, Handler> = {
 	"/api/edit-script-lines": ScriptHandlers.editScriptLines,
 	"/api/insert-script-lines": ScriptHandlers.insertScriptLines,
 	"/api/delete-script-lines": ScriptHandlers.deleteScriptLines,
+	"/api/get-all-scripts": ScriptHandlers.getAllScripts,
+	"/api/find-references": ScriptHandlers.findReferences,
+	"/api/execute-luau-wait": ScriptHandlers.executeLuauWait,
 
 	"/api/get-attribute": MetadataHandlers.getAttribute,
 	"/api/set-attribute": MetadataHandlers.setAttribute,

@@ -99,6 +99,9 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     const { parent, ...options } = body;
     return tools.createSound(parent as string, options);
   },
+  get_all_scripts: (tools, body) => tools.getAllScripts(body.includeSource as boolean | undefined),
+  find_references: (tools, body) => tools.findReferences(body.query as string),
+  execute_luau_wait: (tools, body) => tools.executeLuauWait(body.code as string),
 };
 
 export function createHttpServer(tools: RobloxStudioTools, bridge: BridgeService, allowedTools?: Set<string>) {

@@ -1429,4 +1429,25 @@ export class RobloxStudioTools {
     const response = await this.client.request('/api/get-deep-snapshot', { path, maxDepth });
     return { content: [{ type: 'text', text: JSON.stringify(response) }] };
   }
+
+  async getAllScripts(includeSource?: boolean) {
+    const response = await this.client.request('/api/get-all-scripts', { includeSource });
+    return { content: [{ type: 'text', text: JSON.stringify(response) }] };
+  }
+
+  async findReferences(query: string) {
+    if (!query) {
+      return { content: [{ type: 'text', text: JSON.stringify({ error: 'query is required' }) }] };
+    }
+    const response = await this.client.request('/api/find-references', { query });
+    return { content: [{ type: 'text', text: JSON.stringify(response) }] };
+  }
+
+  async executeLuauWait(code: string) {
+    if (!code) {
+      return { content: [{ type: 'text', text: JSON.stringify({ error: 'code is required' }) }] };
+    }
+    const response = await this.client.request('/api/execute-luau-wait', { code });
+    return { content: [{ type: 'text', text: JSON.stringify(response) }] };
+  }
 }

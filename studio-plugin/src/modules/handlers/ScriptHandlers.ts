@@ -343,10 +343,86 @@ function deleteScriptLines(requestData: Record<string, unknown>) {
 	return { error: `Failed to delete script lines: ${result}` };
 }
 
+function getAllScripts(requestData: Record<string, unknown>) {
+	const includeSource = requestData.includeSource !== false;
+	const results: Record<string, unknown>[] = [];
+
+	const [success, err] = pcall(() => {
+		for (const desc of game.GetDescendants()) {
+			if (desc.IsA("LuaSourceContainer")) {
+				const entry: Record<string, unknown> = {
+					path: getInstancePath(desc),
+					name: desc.Name,
+					className: desc.ClassName,
+				};
+				if (includeSource) {
+					const [ok, src] = pcall(() => (desc as unknown as { Source: string }).Source);
+					entry.source = ok ? src : "[unreadable]";
+				}
+				results.push(entry);
+			}
+		}
+	});
+
+	if (!success) return { error: tostring(err) };
+	return { count: results.size(), scripts: results };
+}
+
+function findReferences(requestData: Record<string, unknown>) {
+	const query = requestData.query as string;
+	if (!query) return { error: "query is required" };
+
+	const results: Record<string, unknown>[] = [];
+	const [success, err] = pcall(() => {
+		for (const desc of game.GetDescendants()) {
+			if (desc.IsA("LuaSourceContainer")) {
+				const [ok, source] = pcall(() => (desc as unknown as { Source: string }).Source);
+				if (ok && source) {
+					if ((source as string).find(query)[0] !== undefined) {
+						results.push({
+							path: getInstancePath(desc),
+							name: desc.Name,
+							className: desc.ClassName,
+						});
+					}
+				}
+			}
+		}
+	});
+
+	if (!success) return { error: tostring(err) };
+	return { query, count: results.size(), references: results };
+}
+
+function executeLuauWait(requestData: Record<string, unknown>) {
+	const code = requestData.code as string;
+	if (!code) return { error: "code is required" };
+
+	const wrappedCode = `return (function()\n${code}\nend)()`;
+	const [loadOk, fn] = loadstring(wrappedCode) as LuaTuple<[(() => unknown) | undefined, string | undefined]>;
+
+	if (!loadOk || !fn) {
+		return { error: `Syntax error: ${tostring(fn)}` };
+	}
+
+	const [runOk, result] = pcall(fn);
+	if (!runOk) return { error: `Runtime error: ${tostring(result)}` };
+
+	// Attempt JSON serialization
+	const HttpSvc = game.GetService("HttpService");
+	const [serOk] = pcall(() => HttpSvc.JSONEncode(result));
+	const finalResult = serOk ? result : tostring(result);
+
+	return { success: true, result: finalResult };
+}
+
 export = {
 	getScriptSource,
 	setScriptSource,
 	editScriptLines,
 	insertScriptLines,
 	deleteScriptLines,
+	getAllScripts,
+	findReferences,
+	executeLuauWait,
 };

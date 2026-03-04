@@ -1641,6 +1641,43 @@ part(0,2,0,2,1,1,"b")`,
     },
   },
 
+  // === Script Tools ===
+  {
+    name: 'get_all_scripts',
+    description: 'Get all scripts in the game with their paths and optionally their source code',
+    category: 'read' as ToolCategory,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        includeSource: { type: 'boolean', description: 'Include script source code (default: true)' },
+      },
+    },
+  },
+  {
+    name: 'find_references',
+    description: 'Find all scripts that reference (contain) a given string (module name, function, pattern)',
+    category: 'read' as ToolCategory,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'String to search for in script sources' },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'execute_luau_wait',
+    description: 'Execute Luau code and wait for the return value (unlike execute_luau which is fire-and-forget)',
+    category: 'write' as ToolCategory,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        code: { type: 'string', description: 'Luau code to execute. Use "return" to return a value.' },
+      },
+      required: ['code'],
+    },
+  },
+
   // === Context Tools ===
   {
     name: 'get_context',
