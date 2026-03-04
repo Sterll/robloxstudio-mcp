@@ -81,7 +81,10 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   get_context: (tools) => tools.getContext(),
   get_deep_snapshot: (tools, body) => tools.getDeepSnapshot(body.path as string, body.maxDepth as number | undefined),
   create_light: (tools, body) => tools.createLight(body.type as string, body.parent as string, body.brightness as number | undefined, body.range as number | undefined, body.color as number[] | undefined, body.enabled as boolean | undefined),
-  create_particle_effect: (tools, body) => tools.createParticleEffect(body.parent as string, body),
+  create_particle_effect: (tools, body) => {
+    const { parent, ...options } = body;
+    return tools.createParticleEffect(parent as string, options);
+  },
 };
 
 export function createHttpServer(tools: RobloxStudioTools, bridge: BridgeService, allowedTools?: Set<string>) {
