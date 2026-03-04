@@ -378,7 +378,7 @@ function findReferences(requestData: Record<string, unknown>) {
 			if (desc.IsA("LuaSourceContainer")) {
 				const [ok, source] = pcall(() => (desc as unknown as { Source: string }).Source);
 				if (ok && source) {
-					if ((source as string).find(query)[0] !== undefined) {
+					if ((source as string).find(query, undefined, true)[0] !== undefined) {
 						results.push({
 							path: getInstancePath(desc),
 							name: desc.Name,
@@ -399,10 +399,10 @@ function executeLuauWait(requestData: Record<string, unknown>) {
 	if (!code) return { error: "code is required" };
 
 	const wrappedCode = `return (function()\n${code}\nend)()`;
-	const [loadOk, fn] = loadstring(wrappedCode) as LuaTuple<[(() => unknown) | undefined, string | undefined]>;
+	const [fn, compileError] = loadstring(wrappedCode) as LuaTuple<[(() => unknown) | undefined, string | undefined]>;
 
-	if (!loadOk || !fn) {
-		return { error: `Syntax error: ${tostring(fn)}` };
+	if (!fn) {
+		return { error: `Syntax error: ${tostring(compileError)}` };
 	}
 
 	const [runOk, result] = pcall(fn);

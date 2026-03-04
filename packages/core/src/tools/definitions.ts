@@ -1667,7 +1667,7 @@ part(0,2,0,2,1,1,"b")`,
   },
   {
     name: 'execute_luau_wait',
-    description: 'Execute Luau code and wait for the return value (unlike execute_luau which is fire-and-forget)',
+    description: 'Execute Luau code and return a structured JSON-serializable result. Use "return" to return a value. Unlike execute_luau, this preserves the original type (table, number, etc.) instead of coercing to string.',
     category: 'write' as ToolCategory,
     inputSchema: {
       type: 'object',
