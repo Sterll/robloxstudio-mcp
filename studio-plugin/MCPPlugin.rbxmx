@@ -54,6 +54,7 @@ local MetadataHandlers = TS.import(script, script.Parent, "handlers", "MetadataH
 local TestHandlers = TS.import(script, script.Parent, "handlers", "TestHandlers")
 local BuildHandlers = TS.import(script, script.Parent, "handlers", "BuildHandlers")
 local AssetHandlers = TS.import(script, script.Parent, "handlers", "AssetHandlers")
+local VFXHandlers = TS.import(script, script.Parent, "handlers", "VFXHandlers")
 local routeMap = {
 	["/api/file-tree"] = QueryHandlers.getFileTree,
 	["/api/search-files"] = QueryHandlers.searchFiles,
@@ -110,6 +111,8 @@ local routeMap = {
 	["/api/search-materials"] = BuildHandlers.searchMaterials,
 	["/api/insert-asset"] = AssetHandlers.insertAsset,
 	["/api/preview-asset"] = AssetHandlers.previewAsset,
+	["/api/create-light"] = VFXHandlers.createLight,
+	["/api/create-particle-effect"] = VFXHandlers.createParticleEffect,
 }
 local function processRequest(request)
 	local endpoint = request.endpoint
@@ -4689,8 +4692,274 @@ return {
 ]]></string>
           </Properties>
         </Item>
+        <Item class="ModuleScript" referent="12">
+          <Properties>
+            <string name="Name">VFXHandlers</string>
+            <string name="Source"><![CDATA[-- Compiled with roblox-ts v3.0.0
+local TS = require(script.Parent.Parent.Parent.include.RuntimeLib)
+local Utils = TS.import(script, script.Parent.Parent, "Utils")
+local Recording = TS.import(script, script.Parent.Parent, "Recording")
+local _binding = Utils
+local getInstancePath = _binding.getInstancePath
+local getInstanceByPath = _binding.getInstanceByPath
+local _binding_1 = Recording
+local beginRecording = _binding_1.beginRecording
+local finishRecording = _binding_1.finishRecording
+-- Helper: build ColorSequence from [{time, rgb}] array
+local function buildColorSequence(data)
+	if #data == 0 then
+		return ColorSequence.new(Color3.fromRGB(255, 255, 255))
+	end
+	local kps = {}
+	for _, kp in data do
+		local _exp = kp.time
+		local _condition = kp.rgb[1]
+		if _condition == nil then
+			_condition = 255
+		end
+		local _condition_1 = kp.rgb[2]
+		if _condition_1 == nil then
+			_condition_1 = 255
+		end
+		local _condition_2 = kp.rgb[3]
+		if _condition_2 == nil then
+			_condition_2 = 255
+		end
+		local _colorSequenceKeypoint = ColorSequenceKeypoint.new(_exp, Color3.fromRGB(_condition, _condition_1, _condition_2))
+		table.insert(kps, _colorSequenceKeypoint)
+	end
+	return ColorSequence.new(kps)
+end
+-- Helper: build NumberSequence from [{time, value}] array
+local function buildNumberSequence(data)
+	if #data == 0 then
+		return NumberSequence.new(1)
+	end
+	local kps = {}
+	for _, kp in data do
+		local _numberSequenceKeypoint = NumberSequenceKeypoint.new(kp.time, kp.value)
+		table.insert(kps, _numberSequenceKeypoint)
+	end
+	return NumberSequence.new(kps)
+end
+local function createLight(requestData)
+	local lightType = requestData.type
+	local parentPath = requestData.parent
+	if not (parentPath ~= "" and parentPath) then
+		return {
+			error = "parent is required",
+		}
+	end
+	local validTypes = { "PointLight", "SpotLight", "SurfaceLight" }
+	if not (lightType ~= "" and lightType) or not (table.find(validTypes, lightType) ~= nil) then
+		return {
+			error = `type must be one of: {table.concat(validTypes, ", ")}`,
+		}
+	end
+	local parentInst = getInstanceByPath(parentPath)
+	if not parentInst then
+		return {
+			error = `Parent not found: {parentPath}`,
+		}
+	end
+	local _condition = (requestData.brightness)
+	if _condition == nil then
+		_condition = 1
+	end
+	local brightness = _condition
+	local _condition_1 = (requestData.range)
+	if _condition_1 == nil then
+		_condition_1 = 16
+	end
+	local range = _condition_1
+	local colorRaw = requestData.color
+	local _result
+	if colorRaw then
+		local _condition_2 = colorRaw[1]
+		if _condition_2 == nil then
+			_condition_2 = 255
+		end
+		local _condition_3 = colorRaw[2]
+		if _condition_3 == nil then
+			_condition_3 = 255
+		end
+		local _condition_4 = colorRaw[3]
+		if _condition_4 == nil then
+			_condition_4 = 255
+		end
+		_result = Color3.fromRGB(_condition_2, _condition_3, _condition_4)
+	else
+		_result = Color3.fromRGB(255, 255, 255)
+	end
+	local color = _result
+	local enabled = requestData.enabled ~= false
+	local recordingId = beginRecording(`Create {lightType}`)
+	local success, light = pcall(function()
+		local l = Instance.new(lightType)
+		l.Brightness = brightness
+		l.Range = range
+		l.Color = color
+		l.Enabled = enabled
+		l.Parent = parentInst
+		return l
+	end)
+	finishRecording(recordingId, success)
+	if success and light then
+		return {
+			success = true,
+			type = lightType,
+			path = getInstancePath(light),
+		}
+	end
+	return {
+		error = `Failed to create {lightType}: {tostring(light)}`,
+	}
+end
+local function createParticleEffect(requestData)
+	local parentPath = requestData.parent
+	if not (parentPath ~= "" and parentPath) then
+		return {
+			error = "parent is required",
+		}
+	end
+	local parentInst = getInstanceByPath(parentPath)
+	if not parentInst then
+		return {
+			error = `Parent not found: {parentPath}`,
+		}
+	end
+	local recordingId = beginRecording("Create ParticleEmitter")
+	local success, emitter = pcall(function()
+		local pe = Instance.new("ParticleEmitter")
+		local _value = requestData.name
+		if _value ~= 0 and _value == _value and _value ~= "" and _value then
+			pe.Name = requestData.name
+		end
+		if requestData.rate ~= nil then
+			pe.Rate = requestData.rate
+		end
+		if requestData.lifetime ~= nil then
+			local lt = requestData.lifetime
+			local _condition = lt[1]
+			if _condition == nil then
+				_condition = 1
+			end
+			local _condition_1 = lt[2]
+			if _condition_1 == nil then
+				_condition_1 = 1
+			end
+			pe.Lifetime = NumberRange.new(_condition, _condition_1)
+		end
+		if requestData.speed ~= nil then
+			local sp = requestData.speed
+			local _condition = sp[1]
+			if _condition == nil then
+				_condition = 5
+			end
+			local _condition_1 = sp[2]
+			if _condition_1 == nil then
+				_condition_1 = 5
+			end
+			pe.Speed = NumberRange.new(_condition, _condition_1)
+		end
+		if requestData.color ~= nil then
+			pe.Color = buildColorSequence(requestData.color)
+		end
+		if requestData.size ~= nil then
+			pe.Size = buildNumberSequence(requestData.size)
+		end
+		if requestData.transparency ~= nil then
+			pe.Transparency = buildNumberSequence(requestData.transparency)
+		end
+		if requestData.lightEmission ~= nil then
+			pe.LightEmission = requestData.lightEmission
+		end
+		if requestData.lightInfluence ~= nil then
+			pe.LightInfluence = requestData.lightInfluence
+		end
+		if requestData.texture ~= nil then
+			pe.Texture = requestData.texture
+		end
+		if requestData.rotSpeed ~= nil then
+			local rs = requestData.rotSpeed
+			local _condition = rs[1]
+			if _condition == nil then
+				_condition = 0
+			end
+			local _condition_1 = rs[2]
+			if _condition_1 == nil then
+				_condition_1 = 0
+			end
+			pe.RotSpeed = NumberRange.new(_condition, _condition_1)
+		end
+		if requestData.rotation ~= nil then
+			local r = requestData.rotation
+			local _condition = r[1]
+			if _condition == nil then
+				_condition = 0
+			end
+			local _condition_1 = r[2]
+			if _condition_1 == nil then
+				_condition_1 = 0
+			end
+			pe.Rotation = NumberRange.new(_condition, _condition_1)
+		end
+		if requestData.acceleration ~= nil then
+			local acc = requestData.acceleration
+			local _condition = acc[1]
+			if _condition == nil then
+				_condition = 0
+			end
+			local _condition_1 = acc[2]
+			if _condition_1 == nil then
+				_condition_1 = 0
+			end
+			local _condition_2 = acc[3]
+			if _condition_2 == nil then
+				_condition_2 = 0
+			end
+			pe.Acceleration = Vector3.new(_condition, _condition_1, _condition_2)
+		end
+		if requestData.spreadAngle ~= nil then
+			local sa = requestData.spreadAngle
+			local _condition = sa[1]
+			if _condition == nil then
+				_condition = 0
+			end
+			local _condition_1 = sa[2]
+			if _condition_1 == nil then
+				_condition_1 = 0
+			end
+			pe.SpreadAngle = Vector2.new(_condition, _condition_1)
+		end
+		if requestData.enabled ~= nil then
+			pe.Enabled = requestData.enabled
+		end
+		pe.Parent = parentInst
+		return pe
+	end)
+	finishRecording(recordingId, success)
+	if success and emitter then
+		return {
+			success = true,
+			path = getInstancePath(emitter),
+		}
+	end
+	return {
+		error = `Failed to create ParticleEmitter: {tostring(emitter)}`,
+	}
+end
+return {
+	createLight = createLight,
+	createParticleEffect = createParticleEffect,
+	buildColorSequence = buildColorSequence,
+	buildNumberSequence = buildNumberSequence,
+}
+]]></string>
+          </Properties>
+        </Item>
       </Item>
-      <Item class="ModuleScript" referent="12">
+      <Item class="ModuleScript" referent="13">
         <Properties>
           <string name="Name">Recording</string>
           <string name="Source"><![CDATA[-- Compiled with roblox-ts v3.0.0
@@ -4720,7 +4989,7 @@ return {
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="13">
+      <Item class="ModuleScript" referent="14">
         <Properties>
           <string name="Name">State</string>
           <string name="Source"><![CDATA[-- Compiled with roblox-ts v3.0.0
@@ -4811,7 +5080,7 @@ return {
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="14">
+      <Item class="ModuleScript" referent="15">
         <Properties>
           <string name="Name">UI</string>
           <string name="Source"><![CDATA[-- Compiled with roblox-ts v3.0.0
@@ -5439,7 +5708,7 @@ return {
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="15">
+      <Item class="ModuleScript" referent="16">
         <Properties>
           <string name="Name">Utils</string>
           <string name="Source"><![CDATA[-- Compiled with roblox-ts v3.0.0
@@ -5969,11 +6238,11 @@ return {
         </Properties>
       </Item>
     </Item>
-    <Item class="Folder" referent="19">
+    <Item class="Folder" referent="20">
       <Properties>
         <string name="Name">include</string>
       </Properties>
-      <Item class="ModuleScript" referent="16">
+      <Item class="ModuleScript" referent="17">
         <Properties>
           <string name="Name">Promise</string>
           <string name="Source"><![CDATA[--[[
@@ -8047,7 +8316,7 @@ return Promise
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="17">
+      <Item class="ModuleScript" referent="18">
         <Properties>
           <string name="Name">RuntimeLib</string>
           <string name="Source"><![CDATA[local Promise = require(script.Parent.Promise)
@@ -8314,15 +8583,15 @@ return TS
         </Properties>
       </Item>
     </Item>
-    <Item class="Folder" referent="20">
+    <Item class="Folder" referent="21">
       <Properties>
         <string name="Name">node_modules</string>
       </Properties>
-      <Item class="Folder" referent="21">
+      <Item class="Folder" referent="22">
         <Properties>
           <string name="Name">@rbxts</string>
         </Properties>
-      <Item class="ModuleScript" referent="18">
+      <Item class="ModuleScript" referent="19">
         <Properties>
           <string name="Name">services</string>
           <string name="Source"><![CDATA[return setmetatable({}, {

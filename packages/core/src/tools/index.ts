@@ -1364,6 +1364,22 @@ export class RobloxStudioTools {
     };
   }
 
+  async createLight(type: string, parent: string, brightness?: number, range?: number, color?: number[], enabled?: boolean) {
+    if (!type || !parent) {
+      throw new Error('type and parent are required for create_light');
+    }
+    const response = await this.client.request('/api/create-light', { type, parent, brightness, range, color, enabled });
+    return { content: [{ type: 'text', text: JSON.stringify(response) }] };
+  }
+
+  async createParticleEffect(parent: string, options?: Record<string, unknown>) {
+    if (!parent) {
+      throw new Error('parent is required for create_particle_effect');
+    }
+    const response = await this.client.request('/api/create-particle-effect', { parent, ...options });
+    return { content: [{ type: 'text', text: JSON.stringify(response) }] };
+  }
+
   async getContext() {
     const response = await this.client.request('/api/get-context', {});
     return { content: [{ type: 'text', text: JSON.stringify(response) }] };

@@ -1473,6 +1473,62 @@ part(0,2,0,2,1,1,"b")`,
     },
   },
 
+  // === VFX Tools ===
+  {
+    name: 'create_light',
+    description: 'Create a PointLight, SpotLight or SurfaceLight under a parent instance',
+    category: 'write',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        type: { type: 'string', description: '"PointLight" | "SpotLight" | "SurfaceLight"' },
+        parent: { type: 'string', description: 'Parent instance path' },
+        brightness: { type: 'number', description: 'Brightness (default: 1)' },
+        range: { type: 'number', description: 'Range in studs (default: 16)' },
+        color: { type: 'array', items: { type: 'number' }, description: '[r, g, b] 0-255 (default: white)' },
+        enabled: { type: 'boolean', description: 'Enabled state (default: true)' },
+      },
+      required: ['type', 'parent'],
+    },
+  },
+  {
+    name: 'create_particle_effect',
+    description: 'Create a fully configured ParticleEmitter. ColorSequence and NumberSequence are built from simple arrays.',
+    category: 'write',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        parent: { type: 'string', description: 'Parent instance path' },
+        name: { type: 'string', description: 'Name for the emitter (default: ParticleEmitter)' },
+        rate: { type: 'number', description: 'Particles per second' },
+        lifetime: { type: 'array', items: { type: 'number' }, description: '[min, max] lifetime in seconds' },
+        speed: { type: 'array', items: { type: 'number' }, description: '[min, max] speed' },
+        color: {
+          type: 'array',
+          description: 'ColorSequence: [{time: 0, rgb: [255,0,0]}, {time: 1, rgb: [0,0,255]}]',
+          items: { type: 'object', additionalProperties: true },
+        },
+        size: {
+          type: 'array',
+          description: 'NumberSequence for size: [{time: 0, value: 1}, {time: 1, value: 0}]',
+          items: { type: 'object', additionalProperties: true },
+        },
+        transparency: {
+          type: 'array',
+          description: 'NumberSequence for transparency',
+          items: { type: 'object', additionalProperties: true },
+        },
+        lightEmission: { type: 'number', description: '0-1' },
+        lightInfluence: { type: 'number', description: '0-1' },
+        texture: { type: 'string', description: 'rbxassetid://...' },
+        spreadAngle: { type: 'array', items: { type: 'number' }, description: '[x, y] spread in degrees' },
+        acceleration: { type: 'array', items: { type: 'number' }, description: '[x, y, z] acceleration vector' },
+        enabled: { type: 'boolean' },
+      },
+      required: ['parent'],
+    },
+  },
+
   // === Context Tools ===
   {
     name: 'get_context',

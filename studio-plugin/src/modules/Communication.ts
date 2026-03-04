@@ -10,6 +10,7 @@ import MetadataHandlers from "./handlers/MetadataHandlers";
 import TestHandlers from "./handlers/TestHandlers";
 import BuildHandlers from "./handlers/BuildHandlers";
 import AssetHandlers from "./handlers/AssetHandlers";
+import VFXHandlers from "./handlers/VFXHandlers";
 import { Connection, RequestPayload, PollResponse } from "../types";
 
 type Handler = (data: Record<string, unknown>) => unknown;
@@ -78,6 +79,9 @@ const routeMap: Record<string, Handler> = {
 
 	"/api/insert-asset": AssetHandlers.insertAsset,
 	"/api/preview-asset": AssetHandlers.previewAsset,
+
+	"/api/create-light": VFXHandlers.createLight,
+	"/api/create-particle-effect": VFXHandlers.createParticleEffect,
 };
 
 function processRequest(request: RequestPayload): unknown {
