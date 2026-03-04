@@ -4,6 +4,16 @@ import Recording from "../Recording";
 const { getInstancePath, getInstanceByPath } = Utils;
 const { beginRecording, finishRecording } = Recording;
 
+const LightingService = game.GetService("Lighting");
+
+function getOrCreate<T extends Instance>(className: string): T {
+	const existing = LightingService.FindFirstChildOfClass(className as keyof Instances);
+	if (existing) return existing as T;
+	const inst = new Instance(className as keyof CreatableInstances);
+	inst.Parent = LightingService;
+	return inst as T;
+}
+
 // Helper: build ColorSequence from [{time, rgb}] array
 function buildColorSequence(data: Array<{ time: number; rgb: number[] }>): ColorSequence {
 	if (data.size() === 0) return new ColorSequence(Color3.fromRGB(255, 255, 255));
@@ -215,4 +225,181 @@ function createTrail(requestData: Record<string, unknown>) {
 	return { error: `Failed to create Trail: ${tostring(result)}` };
 }
 
-export = { createLight, createParticleEffect, createBeam, createTrail, buildColorSequence, buildNumberSequence };
+function setPostProcessing(requestData: Record<string, unknown>) {
+	const recordingId = beginRecording("Set post-processing effects");
+	const created: string[] = [];
+
+	const [success, err] = pcall(() => {
+		if (requestData.bloom) {
+			const b = requestData.bloom as Record<string, number>;
+			const bloom = getOrCreate<BloomEffect>("BloomEffect");
+			if (b.intensity !== undefined) bloom.Intensity = b.intensity;
+			if (b.size !== undefined) bloom.Size = b.size;
+			if (b.threshold !== undefined) bloom.Threshold = b.threshold;
+			created.push("BloomEffect");
+		}
+		if (requestData.colorCorrection) {
+			const c = requestData.colorCorrection as Record<string, unknown>;
+			const cc = getOrCreate<ColorCorrectionEffect>("ColorCorrectionEffect");
+			if (c.saturation !== undefined) cc.Saturation = c.saturation as number;
+			if (c.contrast !== undefined) cc.Contrast = c.contrast as number;
+			if (c.tintColor !== undefined) {
+				const tc = c.tintColor as number[];
+				cc.TintColor = Color3.fromRGB(tc[0] ?? 255, tc[1] ?? 255, tc[2] ?? 255);
+			}
+			created.push("ColorCorrectionEffect");
+		}
+		if (requestData.sunRays) {
+			const s = requestData.sunRays as Record<string, number>;
+			const sr = getOrCreate<SunRaysEffect>("SunRaysEffect");
+			if (s.intensity !== undefined) sr.Intensity = s.intensity;
+			if (s.spread !== undefined) sr.Spread = s.spread;
+			created.push("SunRaysEffect");
+		}
+		if (requestData.depthOfField) {
+			const d = requestData.depthOfField as Record<string, number>;
+			const dof = getOrCreate<DepthOfFieldEffect>("DepthOfFieldEffect");
+			if (d.farIntensity !== undefined) dof.FarIntensity = d.farIntensity;
+			if (d.focusDistance !== undefined) dof.FocusDistance = d.focusDistance;
+			if (d.inFocusRadius !== undefined) dof.InFocusRadius = d.inFocusRadius;
+			created.push("DepthOfFieldEffect");
+		}
+		if (requestData.blur) {
+			const b = requestData.blur as Record<string, number>;
+			const blur = getOrCreate<BlurEffect>("BlurEffect");
+			if (b.size !== undefined) blur.Size = b.size;
+			created.push("BlurEffect");
+		}
+	});
+	finishRecording(recordingId, success);
+
+	if (success) return { success: true, effects: created };
+	return { error: `Failed to set post-processing: ${tostring(err)}` };
+}
+
+function createVfxPreset(requestData: Record<string, unknown>) {
+	const preset = requestData.preset as string;
+	const targetPath = requestData.target as string;
+	const scale = (requestData.scale as number | undefined) ?? 1;
+	const colorRaw = requestData.color as number[] | undefined;
+
+	if (!preset || !targetPath) return { error: "preset and target are required" };
+	const validPresets = ["explosion", "fire", "magic_aura", "hit_effect", "smoke"];
+	if (!validPresets.includes(preset)) {
+		return { error: `Unknown preset: ${preset}. Valid: ${validPresets.join(", ")}` };
+	}
+
+	const targetInst = getInstanceByPath(targetPath);
+	if (!targetInst) return { error: `Target not found: ${targetPath}` };
+
+	const c = colorRaw ?? [255, 150, 0];
+	const mainColor = Color3.fromRGB(c[0] ?? 255, c[1] ?? 150, c[2] ?? 0);
+	const created: string[] = [];
+	const recordingId = beginRecording(`VFX preset: ${preset}`);
+
+	const [success, err] = pcall(() => {
+		if (preset === "explosion") {
+			const light = new Instance("PointLight");
+			light.Brightness = 20 * scale;
+			light.Range = 30 * scale;
+			light.Color = mainColor;
+			light.Parent = targetInst;
+			created.push(getInstancePath(light));
+
+			const burst = new Instance("ParticleEmitter");
+			burst.Name = "ExplosionBurst";
+			burst.Rate = 500;
+			burst.Lifetime = new NumberRange(0.1 * scale, 0.3 * scale);
+			burst.Speed = new NumberRange(10 * scale, 30 * scale);
+			burst.Color = new ColorSequence(mainColor);
+			burst.LightEmission = 0.8;
+			burst.Parent = targetInst;
+			created.push(getInstancePath(burst));
+
+			const smoke = new Instance("ParticleEmitter");
+			smoke.Name = "ExplosionSmoke";
+			smoke.Rate = 20;
+			smoke.Lifetime = new NumberRange(1 * scale, 2 * scale);
+			smoke.Speed = new NumberRange(2, 5);
+			smoke.Color = new ColorSequence(Color3.fromRGB(100, 100, 100));
+			smoke.Parent = targetInst;
+			created.push(getInstancePath(smoke));
+
+		} else if (preset === "fire") {
+			const fire = new Instance("Fire");
+			(fire as unknown as { Size: number }).Size = 5 * scale;
+			(fire as unknown as { Heat: number }).Heat = 9 * scale;
+			(fire as unknown as { Color: Color3 }).Color = mainColor;
+			fire.Parent = targetInst;
+			created.push(getInstancePath(fire));
+
+			const smokeInst = new Instance("Smoke");
+			(smokeInst as unknown as { RiseVelocity: number }).RiseVelocity = 4;
+			(smokeInst as unknown as { Density: number }).Density = 0.3;
+			smokeInst.Parent = targetInst;
+			created.push(getInstancePath(smokeInst));
+
+		} else if (preset === "magic_aura") {
+			const aura = new Instance("ParticleEmitter");
+			aura.Name = "MagicAura";
+			aura.Rate = 30 * scale;
+			aura.Lifetime = new NumberRange(0.5, 1.5);
+			aura.Speed = new NumberRange(1, 3);
+			aura.SpreadAngle = new Vector2(360, 360);
+			aura.Color = new ColorSequence(mainColor);
+			aura.LightEmission = 0.6;
+			aura.Parent = targetInst;
+			created.push(getInstancePath(aura));
+
+			const light2 = new Instance("PointLight");
+			light2.Color = mainColor;
+			light2.Brightness = 3 * scale;
+			light2.Range = 10 * scale;
+			light2.Parent = targetInst;
+			created.push(getInstancePath(light2));
+
+		} else if (preset === "hit_effect") {
+			const hit = new Instance("ParticleEmitter");
+			hit.Name = "HitEffect";
+			hit.Rate = 1000;
+			hit.Lifetime = new NumberRange(0.05, 0.15);
+			hit.Speed = new NumberRange(5 * scale, 15 * scale);
+			hit.SpreadAngle = new Vector2(180, 180);
+			hit.Color = new ColorSequence(mainColor);
+			hit.LightEmission = 1;
+			hit.Parent = targetInst;
+			created.push(getInstancePath(hit));
+
+			const flash = new Instance("PointLight");
+			flash.Color = mainColor;
+			flash.Brightness = 10 * scale;
+			flash.Range = 15 * scale;
+			flash.Parent = targetInst;
+			created.push(getInstancePath(flash));
+
+		} else if (preset === "smoke") {
+			const nativeSmoke = new Instance("Smoke");
+			(nativeSmoke as unknown as { RiseVelocity: number }).RiseVelocity = 3 * scale;
+			(nativeSmoke as unknown as { Density: number }).Density = 0.5;
+			(nativeSmoke as unknown as { Color: Color3 }).Color = Color3.fromRGB(180, 180, 180);
+			nativeSmoke.Parent = targetInst;
+			created.push(getInstancePath(nativeSmoke));
+
+			const smokeParticles = new Instance("ParticleEmitter");
+			smokeParticles.Name = "SmokeParticles";
+			smokeParticles.Rate = 5 * scale;
+			smokeParticles.Lifetime = new NumberRange(2, 4);
+			smokeParticles.Speed = new NumberRange(1, 3);
+			smokeParticles.Color = new ColorSequence(Color3.fromRGB(160, 160, 160));
+			smokeParticles.LightInfluence = 1;
+			smokeParticles.Parent = targetInst;
+			created.push(getInstancePath(smokeParticles));
+		}
+	});
+	finishRecording(recordingId, success);
+
+	if (success) return { success: true, preset, target: targetPath, created };
+	return { error: `Failed to create VFX preset: ${tostring(err)}` };
+}
+
+export = { createLight, createParticleEffect, createBeam, createTrail, setPostProcessing, createVfxPreset };

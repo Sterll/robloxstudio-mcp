@@ -84,6 +84,8 @@ const routeMap: Record<string, Handler> = {
 	"/api/create-particle-effect": VFXHandlers.createParticleEffect,
 	"/api/create-beam": VFXHandlers.createBeam,
 	"/api/create-trail": VFXHandlers.createTrail,
+	"/api/set-post-processing": VFXHandlers.setPostProcessing,
+	"/api/create-vfx-preset": VFXHandlers.createVfxPreset,
 };
 
 function processRequest(request: RequestPayload): unknown {

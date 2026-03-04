@@ -1396,6 +1396,19 @@ export class RobloxStudioTools {
     return { content: [{ type: 'text', text: JSON.stringify(response) }] };
   }
 
+  async setPostProcessing(effects: Record<string, unknown>) {
+    const response = await this.client.request('/api/set-post-processing', effects);
+    return { content: [{ type: 'text', text: JSON.stringify(response) }] };
+  }
+
+  async createVfxPreset(preset: string, target: string, scale?: number, color?: number[]) {
+    if (!preset || !target) {
+      return { content: [{ type: 'text', text: JSON.stringify({ error: 'preset and target are required' }) }] };
+    }
+    const response = await this.client.request('/api/create-vfx-preset', { preset, target, scale, color });
+    return { content: [{ type: 'text', text: JSON.stringify(response) }] };
+  }
+
   async getContext() {
     const response = await this.client.request('/api/get-context', {});
     return { content: [{ type: 'text', text: JSON.stringify(response) }] };

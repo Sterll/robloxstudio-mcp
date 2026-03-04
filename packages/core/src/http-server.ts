@@ -93,6 +93,8 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     const { parent, ...options } = body;
     return tools.createTrail(parent as string, options);
   },
+  set_post_processing: (tools, body) => tools.setPostProcessing(body),
+  create_vfx_preset: (tools, body) => tools.createVfxPreset(body.preset as string, body.target as string, body.scale as number | undefined, body.color as number[] | undefined),
 };
 
 export function createHttpServer(tools: RobloxStudioTools, bridge: BridgeService, allowedTools?: Set<string>) {

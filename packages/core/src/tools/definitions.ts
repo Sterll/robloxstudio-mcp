@@ -1570,6 +1570,57 @@ part(0,2,0,2,1,1,"b")`,
     },
   },
 
+  {
+    name: 'set_post_processing',
+    description: 'Create or update post-processing effects in game.Lighting (Bloom, ColorCorrection, SunRays, DepthOfField, Blur)',
+    category: 'write' as ToolCategory,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        bloom: {
+          type: 'object',
+          description: '{ intensity?: number, size?: number, threshold?: number }',
+          additionalProperties: true,
+        },
+        colorCorrection: {
+          type: 'object',
+          description: '{ saturation?: number, contrast?: number, tintColor?: [r,g,b] }',
+          additionalProperties: true,
+        },
+        sunRays: {
+          type: 'object',
+          description: '{ intensity?: number, spread?: number }',
+          additionalProperties: true,
+        },
+        depthOfField: {
+          type: 'object',
+          description: '{ farIntensity?: number, focusDistance?: number, inFocusRadius?: number }',
+          additionalProperties: true,
+        },
+        blur: {
+          type: 'object',
+          description: '{ size?: number }',
+          additionalProperties: true,
+        },
+      },
+    },
+  },
+  {
+    name: 'create_vfx_preset',
+    description: 'Create a complete named VFX preset in one call. Presets: explosion, fire, magic_aura, hit_effect, smoke',
+    category: 'write' as ToolCategory,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        preset: { type: 'string', description: '"explosion" | "fire" | "magic_aura" | "hit_effect" | "smoke"' },
+        target: { type: 'string', description: 'Target instance path (e.g. "Workspace.HitPart")' },
+        scale: { type: 'number', description: 'Global scale multiplier (default: 1)' },
+        color: { type: 'array', items: { type: 'number' }, description: '[r, g, b] 0-255 main color (default: orange)' },
+      },
+      required: ['preset', 'target'],
+    },
+  },
+
   // === Context Tools ===
   {
     name: 'get_context',
