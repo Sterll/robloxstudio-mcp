@@ -1,6 +1,5 @@
 /** @type {import('jest').Config} */
 export default {
-  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
@@ -9,14 +8,7 @@ export default {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       useESM: true,
-      tsconfig: {
-        module: 'esnext',
-        target: 'esnext',
-        lib: ['esnext'],
-        allowJs: true,
-        esModuleInterop: true,
-        moduleResolution: 'node'
-      }
+      tsconfig: './tsconfig.test.json'
     }],
   },
   testMatch: [

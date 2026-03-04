@@ -78,7 +78,7 @@ describe('HTTP Server', () => {
       expect(app.isPluginConnected()).toBe(true);
 
       const originalDateNow = Date.now;
-      Date.now = jest.fn(() => originalDateNow() + 11000);
+      Date.now = jest.fn(() => originalDateNow() + 31000);
 
       expect(app.isPluginConnected()).toBe(false);
 
@@ -204,7 +204,7 @@ describe('HTTP Server', () => {
       expect(app.isMCPServerActive()).toBe(true);
 
       const originalDateNow = Date.now;
-      Date.now = jest.fn(() => originalDateNow() + 16000);
+      Date.now = jest.fn(() => originalDateNow() + 31000);
 
       expect(app.isMCPServerActive()).toBe(false);
 

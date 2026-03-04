@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { EventEmitter } from 'events';
 
 interface PendingRequest {
   id: string;
@@ -10,7 +11,7 @@ interface PendingRequest {
   timeoutId: ReturnType<typeof setTimeout>;
 }
 
-export class BridgeService {
+export class BridgeService extends EventEmitter {
   private pendingRequests: Map<string, PendingRequest> = new Map();
   private requestTimeout = 30000;
 
@@ -37,6 +38,7 @@ export class BridgeService {
       };
 
       this.pendingRequests.set(requestId, request);
+      this.emit('request');
     });
   }
 
