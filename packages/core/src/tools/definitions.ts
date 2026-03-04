@@ -1621,6 +1621,26 @@ part(0,2,0,2,1,1,"b")`,
     },
   },
 
+  // === Audio Tools ===
+  {
+    name: 'create_sound',
+    description: 'Create a Sound instance with full configuration',
+    category: 'write' as ToolCategory,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        parent: { type: 'string', description: 'Parent instance path' },
+        soundId: { type: 'string', description: 'rbxassetid://... sound asset ID' },
+        name: { type: 'string', description: 'Name for the Sound instance' },
+        volume: { type: 'number', description: '0-1 (default: 0.5)' },
+        looped: { type: 'boolean', description: 'Whether the sound loops' },
+        rollOffMaxDistance: { type: 'number', description: 'Max distance for 3D audio falloff' },
+        pitch: { type: 'number', description: 'Pitch multiplier via PlaybackSpeed (default: 1)' },
+      },
+      required: ['parent'],
+    },
+  },
+
   // === Context Tools ===
   {
     name: 'get_context',

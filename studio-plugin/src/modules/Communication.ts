@@ -11,6 +11,7 @@ import TestHandlers from "./handlers/TestHandlers";
 import BuildHandlers from "./handlers/BuildHandlers";
 import AssetHandlers from "./handlers/AssetHandlers";
 import VFXHandlers from "./handlers/VFXHandlers";
+import AudioHandlers from "./handlers/AudioHandlers";
 import { Connection, RequestPayload, PollResponse } from "../types";
 
 type Handler = (data: Record<string, unknown>) => unknown;
@@ -86,6 +87,8 @@ const routeMap: Record<string, Handler> = {
 	"/api/create-trail": VFXHandlers.createTrail,
 	"/api/set-post-processing": VFXHandlers.setPostProcessing,
 	"/api/create-vfx-preset": VFXHandlers.createVfxPreset,
+
+	"/api/create-sound": AudioHandlers.createSound,
 };
 
 function processRequest(request: RequestPayload): unknown {

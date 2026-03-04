@@ -95,6 +95,10 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   },
   set_post_processing: (tools, body) => tools.setPostProcessing(body),
   create_vfx_preset: (tools, body) => tools.createVfxPreset(body),
+  create_sound: (tools, body) => {
+    const { parent, ...options } = body;
+    return tools.createSound(parent as string, options);
+  },
 };
 
 export function createHttpServer(tools: RobloxStudioTools, bridge: BridgeService, allowedTools?: Set<string>) {

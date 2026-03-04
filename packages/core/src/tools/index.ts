@@ -1409,6 +1409,14 @@ export class RobloxStudioTools {
     return { content: [{ type: 'text', text: JSON.stringify(response) }] };
   }
 
+  async createSound(parent: string, options?: Record<string, unknown>) {
+    if (!parent) {
+      return { content: [{ type: 'text', text: JSON.stringify({ error: 'parent is required' }) }] };
+    }
+    const response = await this.client.request('/api/create-sound', { parent, ...options });
+    return { content: [{ type: 'text', text: JSON.stringify(response) }] };
+  }
+
   async getContext() {
     const response = await this.client.request('/api/get-context', {});
     return { content: [{ type: 'text', text: JSON.stringify(response) }] };
