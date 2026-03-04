@@ -40,6 +40,11 @@ const routeMap: Record<string, Handler> = {
 	"/api/delete-object": InstanceHandlers.deleteObject,
 	"/api/smart-duplicate": InstanceHandlers.smartDuplicate,
 	"/api/mass-duplicate": InstanceHandlers.massDuplicate,
+	"/api/move-object": InstanceHandlers.moveObject,
+	"/api/rename-object": InstanceHandlers.renameObject,
+	"/api/clone-instance": InstanceHandlers.cloneInstance,
+	"/api/get-descendants-by-class": InstanceHandlers.getDescendantsByClass,
+	"/api/set-multiple-properties": PropertyHandlers.setMultipleProperties,
 
 	"/api/get-script-source": ScriptHandlers.getScriptSource,
 	"/api/set-script-source": ScriptHandlers.setScriptSource,

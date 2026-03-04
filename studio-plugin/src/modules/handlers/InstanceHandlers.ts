@@ -369,6 +369,90 @@ function massDuplicate(requestData: Record<string, unknown>) {
 	};
 }
 
+function moveObject(requestData: Record<string, unknown>) {
+	const instancePath = requestData.instancePath as string;
+	const newParentPath = requestData.newParent as string;
+	if (!instancePath || !newParentPath) return { error: "instancePath and newParent are required" };
+
+	const instance = getInstanceByPath(instancePath);
+	if (!instance) return { error: `Instance not found: ${instancePath}` };
+	const newParent = getInstanceByPath(newParentPath);
+	if (!newParent) return { error: `New parent not found: ${newParentPath}` };
+
+	const recordingId = beginRecording(`Move ${instance.Name}`);
+	const [success, err] = pcall(() => { instance.Parent = newParent; });
+	finishRecording(recordingId, success);
+
+	if (success) return { success: true, instancePath: getInstancePath(instance), message: "Instance moved" };
+	return { error: `Failed to move: ${tostring(err)}` };
+}
+
+function renameObject(requestData: Record<string, unknown>) {
+	const instancePath = requestData.instancePath as string;
+	const newName = requestData.newName as string;
+	if (!instancePath || !newName) return { error: "instancePath and newName are required" };
+
+	const instance = getInstanceByPath(instancePath);
+	if (!instance) return { error: `Instance not found: ${instancePath}` };
+
+	const oldName = instance.Name;
+	const recordingId = beginRecording(`Rename ${oldName} to ${newName}`);
+	const [success, err] = pcall(() => { instance.Name = newName; });
+	finishRecording(recordingId, success);
+
+	if (success) return { success: true, oldName, newName, instancePath: getInstancePath(instance) };
+	return { error: `Failed to rename: ${tostring(err)}` };
+}
+
+function cloneInstance(requestData: Record<string, unknown>) {
+	const instancePath = requestData.instancePath as string;
+	const parentPath = requestData.parent as string;
+	const position = requestData.position as number[] | undefined;
+	if (!instancePath || !parentPath) return { error: "instancePath and parent are required" };
+
+	const instance = getInstanceByPath(instancePath);
+	if (!instance) return { error: `Instance not found: ${instancePath}` };
+	const parent = getInstanceByPath(parentPath);
+	if (!parent) return { error: `Parent not found: ${parentPath}` };
+
+	const recordingId = beginRecording(`Clone ${instance.Name}`);
+	const [success, clone] = pcall(() => {
+		const c = instance.Clone();
+		if (position && c.IsA("BasePart")) {
+			c.Position = new Vector3(position[0] ?? 0, position[1] ?? 0, position[2] ?? 0);
+		}
+		c.Parent = parent;
+		return c;
+	});
+	finishRecording(recordingId, success);
+
+	if (success && clone) {
+		return { success: true, instancePath: getInstancePath(clone as Instance), name: (clone as Instance).Name };
+	}
+	return { error: `Failed to clone: ${tostring(clone)}` };
+}
+
+function getDescendantsByClass(requestData: Record<string, unknown>) {
+	const path = requestData.path as string;
+	const className = requestData.className as string;
+	if (!path || !className) return { error: "path and className are required" };
+
+	const root = getInstanceByPath(path);
+	if (!root) return { error: `Instance not found: ${path}` };
+
+	const results: Record<string, unknown>[] = [];
+	const [success, err] = pcall(() => {
+		for (const desc of root.GetDescendants()) {
+			if (desc.ClassName === className) {
+				results.push({ path: getInstancePath(desc), name: desc.Name, className: desc.ClassName });
+			}
+		}
+	});
+
+	if (!success) return { error: tostring(err) };
+	return { count: results.size(), results };
+}
+
 export = {
 	createObject,
 	deleteObject,
@@ -376,4 +460,8 @@ export = {
 	massCreateObjectsWithProperties,
 	smartDuplicate,
 	massDuplicate,
+	moveObject,
+	renameObject,
+	cloneInstance,
+	getDescendantsByClass,
 };

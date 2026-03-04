@@ -272,10 +272,37 @@ function setRelativeProperty(requestData: Record<string, unknown>) {
 	};
 }
 
+function setMultipleProperties(requestData: Record<string, unknown>) {
+	const instancePath = requestData.instancePath as string;
+	const properties = requestData.properties as Record<string, unknown>;
+	if (!instancePath || !properties) return { error: "instancePath and properties are required" };
+
+	const instance = getInstanceByPath(instancePath);
+	if (!instance) return { error: `Instance not found: ${instancePath}` };
+
+	const recordingId = beginRecording(`Set multiple properties on ${instance.Name}`);
+	const results: Record<string, unknown> = {};
+	let failures = 0;
+
+	for (const [propName, propValue] of pairs(properties)) {
+		const propNameStr = tostring(propName);
+		const [ok, err] = pcall(() => {
+			const converted = convertPropertyValue(instance, propNameStr, propValue);
+			(instance as unknown as Record<string, unknown>)[propNameStr] = converted !== undefined ? converted : propValue;
+		});
+		results[propNameStr] = ok ? "ok" : tostring(err);
+		if (!ok) failures++;
+	}
+
+	finishRecording(recordingId, failures === 0);
+	return { success: failures === 0, instancePath, results, failures };
+}
+
 export = {
 	setProperty,
 	massSetProperty,
 	massGetProperty,
 	setCalculatedProperty,
 	setRelativeProperty,
+	setMultipleProperties,
 };
