@@ -1398,6 +1398,101 @@ part(0,2,0,2,1,1,"b")`,
       required: ['operations'],
     },
   },
+  {
+    name: 'move_object',
+    category: 'write',
+    description: 'Re-parent an instance to a new parent',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        instancePath: { type: 'string', description: 'Path of instance to move' },
+        newParent: { type: 'string', description: 'Path of the new parent' },
+      },
+      required: ['instancePath', 'newParent'],
+    },
+  },
+  {
+    name: 'rename_object',
+    category: 'write',
+    description: 'Rename an instance (sets its Name property)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        instancePath: { type: 'string', description: 'Path of instance to rename' },
+        newName: { type: 'string', description: 'New name for the instance' },
+      },
+      required: ['instancePath', 'newName'],
+    },
+  },
+  {
+    name: 'clone_instance',
+    category: 'write',
+    description: 'Clone an instance to a new parent, with optional position',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        instancePath: { type: 'string', description: 'Path of instance to clone' },
+        parent: { type: 'string', description: 'Path of parent for the clone' },
+        position: {
+          type: 'array',
+          items: { type: 'number' },
+          description: 'Optional [x,y,z] position if clone is a BasePart',
+        },
+      },
+      required: ['instancePath', 'parent'],
+    },
+  },
+  {
+    name: 'get_descendants_by_class',
+    category: 'read',
+    description: 'Get all descendants of a given class under a path',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Root path to search under' },
+        className: { type: 'string', description: 'Exact class name to filter (e.g. "Part", "Script")' },
+      },
+      required: ['path', 'className'],
+    },
+  },
+  {
+    name: 'set_multiple_properties',
+    category: 'write',
+    description: 'Set multiple properties on a single instance in one call',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        instancePath: { type: 'string', description: 'Path of the instance' },
+        properties: {
+          type: 'object',
+          description: 'Map of propertyName → value',
+          additionalProperties: true,
+        },
+      },
+      required: ['instancePath', 'properties'],
+    },
+  },
+
+  // === Context Tools ===
+  {
+    name: 'get_context',
+    description: 'Fast snapshot: selected object, game name, services, script count. Ideal as first call to understand the scene.',
+    category: 'read',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_deep_snapshot',
+    description: 'Get full subtree of an object (children + properties) recursively',
+    category: 'read',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Root path to snapshot' },
+        maxDepth: { type: 'number', description: 'Max recursion depth (default: 3)' },
+      },
+      required: ['path'],
+    },
+  },
 ];
 
 export const getReadOnlyTools = () => TOOL_DEFINITIONS.filter(t => t.category === 'read');

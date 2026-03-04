@@ -1288,4 +1288,92 @@ export class RobloxStudioTools {
       ],
     };
   }
+
+  async moveObject(instancePath: string, newParent: string) {
+    if (!instancePath || !newParent) {
+      throw new Error('instancePath and newParent are required for move_object');
+    }
+    const response = await this.client.request('/api/move-object', { instancePath, newParent });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response),
+        },
+      ],
+    };
+  }
+
+  async renameObject(instancePath: string, newName: string) {
+    if (!instancePath || !newName) {
+      throw new Error('instancePath and newName are required for rename_object');
+    }
+    const response = await this.client.request('/api/rename-object', { instancePath, newName });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response),
+        },
+      ],
+    };
+  }
+
+  async cloneInstance(instancePath: string, parent: string, position?: [number, number, number]) {
+    if (!instancePath || !parent) {
+      throw new Error('instancePath and parent are required for clone_instance');
+    }
+    const response = await this.client.request('/api/clone-instance', { instancePath, parent, position });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response),
+        },
+      ],
+    };
+  }
+
+  async getDescendantsByClass(path: string, className: string) {
+    if (!path || !className) {
+      throw new Error('path and className are required for get_descendants_by_class');
+    }
+    const response = await this.client.request('/api/get-descendants-by-class', { path, className });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response),
+        },
+      ],
+    };
+  }
+
+  async setMultipleProperties(instancePath: string, properties: Record<string, unknown>) {
+    if (!instancePath || !properties) {
+      throw new Error('instancePath and properties are required for set_multiple_properties');
+    }
+    const response = await this.client.request('/api/set-multiple-properties', { instancePath, properties });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response),
+        },
+      ],
+    };
+  }
+
+  async getContext() {
+    const response = await this.client.request('/api/get-context', {});
+    return { content: [{ type: 'text', text: JSON.stringify(response) }] };
+  }
+
+  async getDeepSnapshot(path: string, maxDepth?: number) {
+    if (!path) {
+      throw new Error('path is required for get_deep_snapshot');
+    }
+    const response = await this.client.request('/api/get-deep-snapshot', { path, maxDepth });
+    return { content: [{ type: 'text', text: JSON.stringify(response) }] };
+  }
 }

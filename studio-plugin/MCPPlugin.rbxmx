@@ -77,6 +77,11 @@ local routeMap = {
 	["/api/delete-object"] = InstanceHandlers.deleteObject,
 	["/api/smart-duplicate"] = InstanceHandlers.smartDuplicate,
 	["/api/mass-duplicate"] = InstanceHandlers.massDuplicate,
+	["/api/move-object"] = InstanceHandlers.moveObject,
+	["/api/rename-object"] = InstanceHandlers.renameObject,
+	["/api/clone-instance"] = InstanceHandlers.cloneInstance,
+	["/api/get-descendants-by-class"] = InstanceHandlers.getDescendantsByClass,
+	["/api/set-multiple-properties"] = PropertyHandlers.setMultipleProperties,
 	["/api/get-script-source"] = ScriptHandlers.getScriptSource,
 	["/api/set-script-source"] = ScriptHandlers.setScriptSource,
 	["/api/edit-script-lines"] = ScriptHandlers.editScriptLines,
@@ -94,6 +99,8 @@ local routeMap = {
 	["/api/execute-luau"] = MetadataHandlers.executeLuau,
 	["/api/undo"] = MetadataHandlers.undo,
 	["/api/redo"] = MetadataHandlers.redo,
+	["/api/get-context"] = MetadataHandlers.getContext,
+	["/api/get-deep-snapshot"] = MetadataHandlers.getDeepSnapshot,
 	["/api/start-playtest"] = TestHandlers.startPlaytest,
 	["/api/stop-playtest"] = TestHandlers.stopPlaytest,
 	["/api/get-playtest-output"] = TestHandlers.getPlaytestOutput,
@@ -118,14 +125,15 @@ local function processRequest(request)
 end
 local function batchExecute(requestData)
 	local operations = requestData.operations
-	if not operations or not (type(operations) == "table") then
+	if not (operations ~= 0 and operations == operations and operations ~= "" and operations) or not (type(operations) == "table") then
 		return {
 			error = "operations array is required",
 		}
 	end
+	local typedOperations = operations
 	local results = {}
 	local allSucceeded = true
-	for _, op in operations do
+	for _, op in typedOperations do
 		local ok, result = pcall(function()
 			return processRequest({
 				endpoint = op.endpoint,
@@ -148,7 +156,7 @@ local function batchExecute(requestData)
 	return {
 		results = results,
 		allSucceeded = allSucceeded,
-		count = #operations,
+		count = #typedOperations,
 	}
 end
 routeMap["/api/batch-execute"] = batchExecute
@@ -1872,6 +1880,165 @@ local function massDuplicate(requestData)
 		},
 	}
 end
+local function moveObject(requestData)
+	local instancePath = requestData.instancePath
+	local newParentPath = requestData.newParent
+	if not (instancePath ~= "" and instancePath) or not (newParentPath ~= "" and newParentPath) then
+		return {
+			error = "instancePath and newParent are required",
+		}
+	end
+	local instance = getInstanceByPath(instancePath)
+	if not instance then
+		return {
+			error = `Instance not found: {instancePath}`,
+		}
+	end
+	local newParent = getInstanceByPath(newParentPath)
+	if not newParent then
+		return {
+			error = `New parent not found: {newParentPath}`,
+		}
+	end
+	local recordingId = beginRecording(`Move {instance.Name}`)
+	local success, err = pcall(function()
+		instance.Parent = newParent
+	end)
+	finishRecording(recordingId, success)
+	if success then
+		return {
+			success = true,
+			instancePath = getInstancePath(instance),
+			message = "Instance moved",
+		}
+	end
+	return {
+		error = `Failed to move: {tostring(err)}`,
+	}
+end
+local function renameObject(requestData)
+	local instancePath = requestData.instancePath
+	local newName = requestData.newName
+	if not (instancePath ~= "" and instancePath) or not (newName ~= "" and newName) then
+		return {
+			error = "instancePath and newName are required",
+		}
+	end
+	local instance = getInstanceByPath(instancePath)
+	if not instance then
+		return {
+			error = `Instance not found: {instancePath}`,
+		}
+	end
+	local oldName = instance.Name
+	local recordingId = beginRecording(`Rename {oldName} to {newName}`)
+	local success, err = pcall(function()
+		instance.Name = newName
+	end)
+	finishRecording(recordingId, success)
+	if success then
+		return {
+			success = true,
+			oldName = oldName,
+			newName = newName,
+			instancePath = getInstancePath(instance),
+		}
+	end
+	return {
+		error = `Failed to rename: {tostring(err)}`,
+	}
+end
+local function cloneInstance(requestData)
+	local instancePath = requestData.instancePath
+	local parentPath = requestData.parent
+	local position = requestData.position
+	if not (instancePath ~= "" and instancePath) or not (parentPath ~= "" and parentPath) then
+		return {
+			error = "instancePath and parent are required",
+		}
+	end
+	local instance = getInstanceByPath(instancePath)
+	if not instance then
+		return {
+			error = `Instance not found: {instancePath}`,
+		}
+	end
+	local parent = getInstanceByPath(parentPath)
+	if not parent then
+		return {
+			error = `Parent not found: {parentPath}`,
+		}
+	end
+	local recordingId = beginRecording(`Clone {instance.Name}`)
+	local success, clone = pcall(function()
+		local c = instance:Clone()
+		if position and c:IsA("BasePart") then
+			local _condition = position[1]
+			if _condition == nil then
+				_condition = 0
+			end
+			local _condition_1 = position[2]
+			if _condition_1 == nil then
+				_condition_1 = 0
+			end
+			local _condition_2 = position[3]
+			if _condition_2 == nil then
+				_condition_2 = 0
+			end
+			c.Position = Vector3.new(_condition, _condition_1, _condition_2)
+		end
+		c.Parent = parent
+		return c
+	end)
+	finishRecording(recordingId, success)
+	if success and clone then
+		return {
+			success = true,
+			instancePath = getInstancePath(clone),
+			name = clone.Name,
+		}
+	end
+	return {
+		error = `Failed to clone: {tostring(clone)}`,
+	}
+end
+local function getDescendantsByClass(requestData)
+	local path = requestData.path
+	local className = requestData.className
+	if not (path ~= "" and path) or not (className ~= "" and className) then
+		return {
+			error = "path and className are required",
+		}
+	end
+	local root = getInstanceByPath(path)
+	if not root then
+		return {
+			error = `Instance not found: {path}`,
+		}
+	end
+	local results = {}
+	local success, err = pcall(function()
+		for _, desc in root:GetDescendants() do
+			if desc.ClassName == className then
+				local _arg0 = {
+					path = getInstancePath(desc),
+					name = desc.Name,
+					className = desc.ClassName,
+				}
+				table.insert(results, _arg0)
+			end
+		end
+	end)
+	if not success then
+		return {
+			error = tostring(err),
+		}
+	end
+	return {
+		count = #results,
+		results = results,
+	}
+end
 return {
 	createObject = createObject,
 	deleteObject = deleteObject,
@@ -1879,6 +2046,10 @@ return {
 	massCreateObjectsWithProperties = massCreateObjectsWithProperties,
 	smartDuplicate = smartDuplicate,
 	massDuplicate = massDuplicate,
+	moveObject = moveObject,
+	renameObject = renameObject,
+	cloneInstance = cloneInstance,
+	getDescendantsByClass = getDescendantsByClass,
 }
 ]]></string>
           </Properties>
@@ -2308,6 +2479,95 @@ local function getTagged(requestData)
 		error = `Failed to get tagged instances: {result}`,
 	}
 end
+local function getContext(_requestData)
+	local selection = Selection:Get()
+	local selected = if #selection > 0 then selection[1] else nil
+	local scripts = {}
+	pcall(function()
+		for _, desc in game:GetDescendants() do
+			if desc:IsA("LuaSourceContainer") then
+				local _arg0 = getInstancePath(desc)
+				table.insert(scripts, _arg0)
+			end
+		end
+	end)
+	local topScripts = {}
+	local limit = math.min(10, #scripts)
+	do
+		local i = 0
+		local _shouldIncrement = false
+		while true do
+			if _shouldIncrement then
+				i += 1
+			else
+				_shouldIncrement = true
+			end
+			if not (i < limit) then
+				break
+			end
+			local _arg0 = scripts[i + 1]
+			table.insert(topScripts, _arg0)
+		end
+	end
+	local services = {}
+	for _, name in { "Workspace", "ServerScriptService", "StarterPlayerScripts", "ReplicatedStorage", "ServerStorage", "StarterGui" } do
+		local ok = pcall(function()
+			return game:GetService(name)
+		end)
+		if ok then
+			table.insert(services, name)
+		end
+	end
+	return {
+		gameName = game.Name,
+		placeId = game.PlaceId,
+		selectedPath = if selected then getInstancePath(selected) else nil,
+		selectedClass = if selected then selected.ClassName else nil,
+		scriptCount = #scripts,
+		topScripts = topScripts,
+		services = services,
+	}
+end
+local function getDeepSnapshot(requestData)
+	local instancePath = requestData.path
+	local _condition = (requestData.maxDepth)
+	if _condition == nil then
+		_condition = 3
+	end
+	local maxDepth = _condition
+	if not (instancePath ~= "" and instancePath) then
+		return {
+			error = "path is required",
+		}
+	end
+	local root = getInstanceByPath(instancePath)
+	if not root then
+		return {
+			error = `Instance not found: {instancePath}`,
+		}
+	end
+	local function snapshotNode(inst, depth)
+		local node = {
+			name = inst.Name,
+			className = inst.ClassName,
+			path = getInstancePath(inst),
+		}
+		local children = inst:GetChildren()
+		node.childCount = #children
+		if depth < maxDepth then
+			local childNodes = {}
+			pcall(function()
+				for _, child in children do
+					local _arg0 = snapshotNode(child, depth + 1)
+					table.insert(childNodes, _arg0)
+				end
+			end)
+			node.children = childNodes
+		end
+		return node
+	end
+	return snapshotNode(root, 0)
+end
 local function getSelection(_requestData)
 	local selection = Selection:Get()
 	if #selection == 0 then
@@ -2437,6 +2697,8 @@ return {
 	addTag = addTag,
 	removeTag = removeTag,
 	getTagged = getTagged,
+	getContext = getContext,
+	getDeepSnapshot = getDeepSnapshot,
 	getSelection = getSelection,
 	executeLuau = executeLuau,
 	undo = undo,
@@ -2838,12 +3100,49 @@ local function setRelativeProperty(requestData)
 		value = value,
 	}
 end
+local function setMultipleProperties(requestData)
+	local instancePath = requestData.instancePath
+	local properties = requestData.properties
+	if not (instancePath ~= "" and instancePath) or not properties then
+		return {
+			error = "instancePath and properties are required",
+		}
+	end
+	local instance = getInstanceByPath(instancePath)
+	if not instance then
+		return {
+			error = `Instance not found: {instancePath}`,
+		}
+	end
+	local recordingId = beginRecording(`Set multiple properties on {instance.Name}`)
+	local results = {}
+	local failures = 0
+	for propName, propValue in pairs(properties) do
+		local propNameStr = tostring(propName)
+		local ok, err = pcall(function()
+			local converted = convertPropertyValue(instance, propNameStr, propValue)
+			instance[propNameStr] = if converted ~= nil then converted else propValue
+		end)
+		results[propNameStr] = if ok then "ok" else tostring(err)
+		if not ok then
+			failures += 1
+		end
+	end
+	finishRecording(recordingId, failures == 0)
+	return {
+		success = failures == 0,
+		instancePath = instancePath,
+		results = results,
+		failures = failures,
+	}
+end
 return {
 	setProperty = setProperty,
 	massSetProperty = massSetProperty,
 	massGetProperty = massGetProperty,
 	setCalculatedProperty = setCalculatedProperty,
 	setRelativeProperty = setRelativeProperty,
+	setMultipleProperties = setMultipleProperties,
 }
 ]]></string>
           </Properties>

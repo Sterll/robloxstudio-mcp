@@ -64,6 +64,8 @@ const routeMap: Record<string, Handler> = {
 	"/api/execute-luau": MetadataHandlers.executeLuau,
 	"/api/undo": MetadataHandlers.undo,
 	"/api/redo": MetadataHandlers.redo,
+	"/api/get-context": MetadataHandlers.getContext,
+	"/api/get-deep-snapshot": MetadataHandlers.getDeepSnapshot,
 
 	"/api/start-playtest": TestHandlers.startPlaytest,
 	"/api/stop-playtest": TestHandlers.stopPlaytest,

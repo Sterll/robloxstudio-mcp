@@ -263,6 +263,73 @@ function getTagged(requestData: Record<string, unknown>) {
 	return { error: `Failed to get tagged instances: ${result}` };
 }
 
+function getContext(_requestData: Record<string, unknown>) {
+	const selection = Selection.Get();
+	const selected = selection.size() > 0 ? selection[0] : undefined;
+
+	const scripts: string[] = [];
+	pcall(() => {
+		for (const desc of game.GetDescendants()) {
+			if (desc.IsA("LuaSourceContainer")) {
+				scripts.push(getInstancePath(desc));
+			}
+		}
+	});
+
+	const topScripts: string[] = [];
+	const limit = math.min(10, scripts.size());
+	for (let i = 0; i < limit; i++) {
+		topScripts.push(scripts[i]);
+	}
+
+	const services: string[] = [];
+	for (const name of ["Workspace", "ServerScriptService", "StarterPlayerScripts", "ReplicatedStorage", "ServerStorage", "StarterGui"] as string[]) {
+		const [ok] = pcall(() => game.GetService(name as keyof Services));
+		if (ok) services.push(name);
+	}
+
+	return {
+		gameName: game.Name,
+		placeId: game.PlaceId,
+		selectedPath: selected ? getInstancePath(selected) : undefined,
+		selectedClass: selected ? selected.ClassName : undefined,
+		scriptCount: scripts.size(),
+		topScripts,
+		services,
+	};
+}
+
+function getDeepSnapshot(requestData: Record<string, unknown>) {
+	const instancePath = requestData.path as string;
+	const maxDepth = (requestData.maxDepth as number | undefined) ?? 3;
+	if (!instancePath) return { error: "path is required" };
+
+	const root = getInstanceByPath(instancePath);
+	if (!root) return { error: `Instance not found: ${instancePath}` };
+
+	function snapshotNode(inst: Instance, depth: number): Record<string, unknown> {
+		const node: Record<string, unknown> = {
+			name: inst.Name,
+			className: inst.ClassName,
+			path: getInstancePath(inst),
+		};
+		const children = inst.GetChildren();
+		node.childCount = children.size();
+		if (depth < maxDepth) {
+			const childNodes: Record<string, unknown>[] = [];
+			pcall(() => {
+				for (const child of children) {
+					childNodes.push(snapshotNode(child, depth + 1));
+				}
+			});
+			node.children = childNodes;
+		}
+		return node;
+	}
+
+	return snapshotNode(root, 0);
+}
+
 function getSelection(_requestData: Record<string, unknown>) {
 	const selection = Selection.Get();
 
@@ -368,6 +435,8 @@ export = {
 	addTag,
 	removeTag,
 	getTagged,
+	getContext,
+	getDeepSnapshot,
 	getSelection,
 	executeLuau,
 	undo,

@@ -73,6 +73,13 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
   insert_asset: (tools, body) => tools.insertAsset(body.assetId, body.parentPath, body.position),
   preview_asset: (tools, body) => tools.previewAsset(body.assetId, body.includeProperties, body.maxDepth),
   batch_execute: (tools, body) => tools.batchExecute(body.operations),
+  move_object: (tools, body) => tools.moveObject(body.instancePath, body.newParent),
+  rename_object: (tools, body) => tools.renameObject(body.instancePath, body.newName),
+  clone_instance: (tools, body) => tools.cloneInstance(body.instancePath, body.parent, body.position),
+  get_descendants_by_class: (tools, body) => tools.getDescendantsByClass(body.path, body.className),
+  set_multiple_properties: (tools, body) => tools.setMultipleProperties(body.instancePath, body.properties),
+  get_context: (tools) => tools.getContext(),
+  get_deep_snapshot: (tools, body) => tools.getDeepSnapshot(body.path as string, body.maxDepth as number | undefined),
 };
 
 export function createHttpServer(tools: RobloxStudioTools, bridge: BridgeService, allowedTools?: Set<string>) {
