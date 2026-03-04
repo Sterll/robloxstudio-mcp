@@ -113,6 +113,8 @@ local routeMap = {
 	["/api/preview-asset"] = AssetHandlers.previewAsset,
 	["/api/create-light"] = VFXHandlers.createLight,
 	["/api/create-particle-effect"] = VFXHandlers.createParticleEffect,
+	["/api/create-beam"] = VFXHandlers.createBeam,
+	["/api/create-trail"] = VFXHandlers.createTrail,
 }
 local function processRequest(request)
 	local endpoint = request.endpoint
@@ -4949,9 +4951,144 @@ local function createParticleEffect(requestData)
 		error = `Failed to create ParticleEmitter: {tostring(emitter)}`,
 	}
 end
+local function createBeam(requestData)
+	local att0Path = requestData.attachment0
+	local att1Path = requestData.attachment1
+	local _condition = (requestData.parent)
+	if _condition == nil then
+		_condition = att0Path
+	end
+	local parentPath = _condition
+	if not (att0Path ~= "" and att0Path) or not (att1Path ~= "" and att1Path) then
+		return {
+			error = "attachment0 and attachment1 paths are required",
+		}
+	end
+	local att0 = getInstanceByPath(att0Path)
+	local att1 = getInstanceByPath(att1Path)
+	if not att0 then
+		return {
+			error = `attachment0 not found: {att0Path}`,
+		}
+	end
+	if not att1 then
+		return {
+			error = `attachment1 not found: {att1Path}`,
+		}
+	end
+	local parentInst = getInstanceByPath(parentPath) or att0
+	local recordingId = beginRecording("Create Beam")
+	local success, beam = pcall(function()
+		local b = Instance.new("Beam")
+		b.Attachment0 = att0
+		b.Attachment1 = att1
+		if requestData.width ~= nil then
+			local w = requestData.width
+			b.Width0 = w
+			b.Width1 = w
+		end
+		if requestData.color ~= nil then
+			b.Color = buildColorSequence(requestData.color)
+		end
+		if requestData.transparency ~= nil then
+			b.Transparency = buildNumberSequence(requestData.transparency)
+		end
+		if requestData.lightEmission ~= nil then
+			b.LightEmission = requestData.lightEmission
+		end
+		if requestData.texture ~= nil then
+			b.Texture = requestData.texture
+		end
+		b.Parent = parentInst
+		return b
+	end)
+	finishRecording(recordingId, success)
+	if success and beam then
+		return {
+			success = true,
+			path = getInstancePath(beam),
+		}
+	end
+	return {
+		error = `Failed to create Beam: {tostring(beam)}`,
+	}
+end
+local function createTrail(requestData)
+	local parentPath = requestData.parent
+	if not (parentPath ~= "" and parentPath) then
+		return {
+			error = "parent is required",
+		}
+	end
+	local parentInst = getInstanceByPath(parentPath)
+	if not parentInst then
+		return {
+			error = `Parent not found: {parentPath}`,
+		}
+	end
+	local recordingId = beginRecording("Create Trail")
+	local success, result = pcall(function()
+		local att0 = Instance.new("Attachment")
+		att0.Name = "TrailAttachment0"
+		att0.Parent = parentInst
+		local att1 = Instance.new("Attachment")
+		att1.Name = "TrailAttachment1"
+		local _condition = (requestData.attachmentOffset)
+		if _condition == nil then
+			_condition = 1
+		end
+		att1.Position = Vector3.new(0, _condition, 0)
+		att1.Parent = parentInst
+		local t = Instance.new("Trail")
+		t.Attachment0 = att0
+		t.Attachment1 = att1
+		if requestData.lifetime ~= nil then
+			t.Lifetime = requestData.lifetime
+		end
+		if requestData.minLength ~= nil then
+			t.MinLength = requestData.minLength
+		end
+		if requestData.color ~= nil then
+			t.Color = buildColorSequence(requestData.color)
+		end
+		if requestData.transparency ~= nil then
+			t.Transparency = buildNumberSequence(requestData.transparency)
+		end
+		if requestData.widthScale ~= nil then
+			t.WidthScale = buildNumberSequence(requestData.widthScale)
+		end
+		if requestData.lightEmission ~= nil then
+			t.LightEmission = requestData.lightEmission
+		end
+		if requestData.texture ~= nil then
+			t.Texture = requestData.texture
+		end
+		t.Parent = parentInst
+		return {
+			trail = t,
+			att0 = att0,
+			att1 = att1,
+		}
+	end)
+	finishRecording(recordingId, success)
+	if success and result then
+		local r = result
+		return {
+			success = true,
+			trailPath = getInstancePath(r.trail),
+			attachment0Path = getInstancePath(r.att0),
+			attachment1Path = getInstancePath(r.att1),
+		}
+	end
+	return {
+		error = `Failed to create Trail: {tostring(result)}`,
+	}
+end
 return {
 	createLight = createLight,
 	createParticleEffect = createParticleEffect,
+	createBeam = createBeam,
+	createTrail = createTrail,
 	buildColorSequence = buildColorSequence,
 	buildNumberSequence = buildNumberSequence,
 }

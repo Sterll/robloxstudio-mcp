@@ -85,6 +85,14 @@ const TOOL_HANDLERS: Record<string, ToolHandler> = {
     const { parent, ...options } = body;
     return tools.createParticleEffect(parent as string, options);
   },
+  create_beam: (tools, body) => {
+    const { attachment0, attachment1, ...options } = body;
+    return tools.createBeam(attachment0 as string, attachment1 as string, options);
+  },
+  create_trail: (tools, body) => {
+    const { parent, ...options } = body;
+    return tools.createTrail(parent as string, options);
+  },
 };
 
 export function createHttpServer(tools: RobloxStudioTools, bridge: BridgeService, allowedTools?: Set<string>) {

@@ -1380,6 +1380,22 @@ export class RobloxStudioTools {
     return { content: [{ type: 'text', text: JSON.stringify(response) }] };
   }
 
+  async createBeam(attachment0: string, attachment1: string, options?: Record<string, unknown>) {
+    if (!attachment0 || !attachment1) {
+      throw new Error('attachment0 and attachment1 are required for create_beam');
+    }
+    const response = await this.client.request('/api/create-beam', { attachment0, attachment1, ...options });
+    return { content: [{ type: 'text', text: JSON.stringify(response) }] };
+  }
+
+  async createTrail(parent: string, options?: Record<string, unknown>) {
+    if (!parent) {
+      throw new Error('parent is required for create_trail');
+    }
+    const response = await this.client.request('/api/create-trail', { parent, ...options });
+    return { content: [{ type: 'text', text: JSON.stringify(response) }] };
+  }
+
   async getContext() {
     const response = await this.client.request('/api/get-context', {});
     return { content: [{ type: 'text', text: JSON.stringify(response) }] };

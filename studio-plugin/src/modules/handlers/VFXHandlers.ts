@@ -125,4 +125,94 @@ function createParticleEffect(requestData: Record<string, unknown>) {
 	return { error: `Failed to create ParticleEmitter: ${tostring(emitter)}` };
 }
 
-export = { createLight, createParticleEffect, buildColorSequence, buildNumberSequence };
+function createBeam(requestData: Record<string, unknown>) {
+	const att0Path = requestData.attachment0 as string;
+	const att1Path = requestData.attachment1 as string;
+	const parentPath = (requestData.parent as string) ?? att0Path;
+
+	if (!att0Path || !att1Path) return { error: "attachment0 and attachment1 paths are required" };
+
+	const att0 = getInstanceByPath(att0Path);
+	const att1 = getInstanceByPath(att1Path);
+	if (!att0) return { error: `attachment0 not found: ${att0Path}` };
+	if (!att1) return { error: `attachment1 not found: ${att1Path}` };
+	const parentInst = getInstanceByPath(parentPath) ?? att0;
+
+	const recordingId = beginRecording("Create Beam");
+	const [success, beam] = pcall(() => {
+		const b = new Instance("Beam");
+		b.Attachment0 = att0 as Attachment;
+		b.Attachment1 = att1 as Attachment;
+		if (requestData.width !== undefined) {
+			const w = requestData.width as number;
+			b.Width0 = w;
+			b.Width1 = w;
+		}
+		if (requestData.color !== undefined) {
+			b.Color = buildColorSequence(requestData.color as Array<{ time: number; rgb: number[] }>);
+		}
+		if (requestData.transparency !== undefined) {
+			b.Transparency = buildNumberSequence(requestData.transparency as Array<{ time: number; value: number }>);
+		}
+		if (requestData.lightEmission !== undefined) b.LightEmission = requestData.lightEmission as number;
+		if (requestData.texture !== undefined) b.Texture = requestData.texture as string;
+		b.Parent = parentInst;
+		return b;
+	});
+	finishRecording(recordingId, success);
+
+	if (success && beam) return { success: true, path: getInstancePath(beam as Instance) };
+	return { error: `Failed to create Beam: ${tostring(beam)}` };
+}
+
+function createTrail(requestData: Record<string, unknown>) {
+	const parentPath = requestData.parent as string;
+	if (!parentPath) return { error: "parent is required" };
+	const parentInst = getInstanceByPath(parentPath);
+	if (!parentInst) return { error: `Parent not found: ${parentPath}` };
+
+	const recordingId = beginRecording("Create Trail");
+	const [success, result] = pcall(() => {
+		const att0 = new Instance("Attachment");
+		att0.Name = "TrailAttachment0";
+		att0.Parent = parentInst;
+
+		const att1 = new Instance("Attachment");
+		att1.Name = "TrailAttachment1";
+		att1.Position = new Vector3(0, (requestData.attachmentOffset as number | undefined) ?? 1, 0);
+		att1.Parent = parentInst;
+
+		const t = new Instance("Trail");
+		t.Attachment0 = att0;
+		t.Attachment1 = att1;
+		if (requestData.lifetime !== undefined) t.Lifetime = requestData.lifetime as number;
+		if (requestData.minLength !== undefined) t.MinLength = requestData.minLength as number;
+		if (requestData.color !== undefined) {
+			t.Color = buildColorSequence(requestData.color as Array<{ time: number; rgb: number[] }>);
+		}
+		if (requestData.transparency !== undefined) {
+			t.Transparency = buildNumberSequence(requestData.transparency as Array<{ time: number; value: number }>);
+		}
+		if (requestData.widthScale !== undefined) {
+			t.WidthScale = buildNumberSequence(requestData.widthScale as Array<{ time: number; value: number }>);
+		}
+		if (requestData.lightEmission !== undefined) t.LightEmission = requestData.lightEmission as number;
+		if (requestData.texture !== undefined) t.Texture = requestData.texture as string;
+		t.Parent = parentInst;
+		return { trail: t, att0, att1 };
+	});
+	finishRecording(recordingId, success);
+
+	if (success && result) {
+		const r = result as { trail: Instance; att0: Instance; att1: Instance };
+		return {
+			success: true,
+			trailPath: getInstancePath(r.trail),
+			attachment0Path: getInstancePath(r.att0),
+			attachment1Path: getInstancePath(r.att1),
+		};
+	}
+	return { error: `Failed to create Trail: ${tostring(result)}` };
+}
+
+export = { createLight, createParticleEffect, createBeam, createTrail, buildColorSequence, buildNumberSequence };

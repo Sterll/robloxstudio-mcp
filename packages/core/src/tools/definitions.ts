@@ -1530,6 +1530,45 @@ part(0,2,0,2,1,1,"b")`,
       required: ['parent'],
     },
   },
+  {
+    name: 'create_beam',
+    description: 'Create a Beam between two Attachments',
+    category: 'write' as ToolCategory,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        attachment0: { type: 'string', description: 'Path to first Attachment' },
+        attachment1: { type: 'string', description: 'Path to second Attachment' },
+        parent: { type: 'string', description: 'Parent for the Beam (defaults to attachment0 parent)' },
+        width: { type: 'number', description: 'Beam width (Width0 = Width1)' },
+        color: { type: 'array', description: 'ColorSequence [{time, rgb}]', items: { type: 'object', additionalProperties: true } },
+        transparency: { type: 'array', description: 'NumberSequence [{time, value}]', items: { type: 'object', additionalProperties: true } },
+        lightEmission: { type: 'number', description: '0-1' },
+        texture: { type: 'string', description: 'rbxassetid://...' },
+      },
+      required: ['attachment0', 'attachment1'],
+    },
+  },
+  {
+    name: 'create_trail',
+    description: 'Create a Trail on a BasePart (auto-creates two Attachments)',
+    category: 'write' as ToolCategory,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        parent: { type: 'string', description: 'Parent BasePart path' },
+        lifetime: { type: 'number', description: 'Trail lifetime in seconds' },
+        minLength: { type: 'number', description: 'Minimum segment length' },
+        attachmentOffset: { type: 'number', description: 'Y offset between the two auto-created attachments (default: 1)' },
+        color: { type: 'array', description: 'ColorSequence [{time, rgb}]', items: { type: 'object', additionalProperties: true } },
+        transparency: { type: 'array', description: 'NumberSequence [{time, value}]', items: { type: 'object', additionalProperties: true } },
+        widthScale: { type: 'array', description: 'NumberSequence [{time, value}]', items: { type: 'object', additionalProperties: true } },
+        lightEmission: { type: 'number' },
+        texture: { type: 'string' },
+      },
+      required: ['parent'],
+    },
+  },
 
   // === Context Tools ===
   {
