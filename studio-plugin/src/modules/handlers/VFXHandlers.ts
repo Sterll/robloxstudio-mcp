@@ -345,7 +345,7 @@ function createVfxPreset(requestData: Record<string, unknown>) {
 			aura.Rate = 30 * scale;
 			aura.Lifetime = new NumberRange(0.5, 1.5);
 			aura.Speed = new NumberRange(1, 3);
-			aura.SpreadAngle = new Vector2(360, 360);
+			aura.SpreadAngle = new Vector2(180, 180);
 			aura.Color = new ColorSequence(mainColor);
 			aura.LightEmission = 0.6;
 			aura.Parent = targetInst;

@@ -1401,11 +1401,11 @@ export class RobloxStudioTools {
     return { content: [{ type: 'text', text: JSON.stringify(response) }] };
   }
 
-  async createVfxPreset(preset: string, target: string, scale?: number, color?: number[]) {
-    if (!preset || !target) {
+  async createVfxPreset(params: Record<string, unknown>) {
+    if (!params.preset || !params.target) {
       return { content: [{ type: 'text', text: JSON.stringify({ error: 'preset and target are required' }) }] };
     }
-    const response = await this.client.request('/api/create-vfx-preset', { preset, target, scale, color });
+    const response = await this.client.request('/api/create-vfx-preset', params);
     return { content: [{ type: 'text', text: JSON.stringify(response) }] };
   }
 
