@@ -264,39 +264,53 @@ function getTagged(requestData: Record<string, unknown>) {
 }
 
 function getContext(_requestData: Record<string, unknown>) {
-	const selection = Selection.Get();
-	const selected = selection.size() > 0 ? selection[0] : undefined;
+	const [success, result] = pcall(() => {
+		const selection = Selection.Get();
+		const selected = selection.size() > 0 ? selection[0] : undefined;
 
-	const scripts: string[] = [];
-	pcall(() => {
-		for (const desc of game.GetDescendants()) {
-			if (desc.IsA("LuaSourceContainer")) {
-				scripts.push(getInstancePath(desc));
+		const scripts: string[] = [];
+		pcall(() => {
+			for (const desc of game.GetDescendants()) {
+				if (desc.IsA("LuaSourceContainer")) {
+					scripts.push(getInstancePath(desc));
+				}
 			}
+		});
+
+		const topScripts: string[] = [];
+		const limit = math.min(10, scripts.size());
+		for (let i = 0; i < limit; i++) {
+			topScripts.push(scripts[i]);
 		}
+
+		const services: string[] = [];
+		for (const name of ["Workspace", "ServerScriptService", "StarterPlayerScripts", "ReplicatedStorage", "ServerStorage", "StarterGui"] as string[]) {
+			const [ok] = pcall(() => game.GetService(name as keyof Services));
+			if (ok) services.push(name);
+		}
+
+		let selectedPath: string | undefined;
+		let selectedClass: string | undefined;
+		if (selected) {
+			pcall(() => {
+				selectedPath = getInstancePath(selected);
+				selectedClass = selected.ClassName;
+			});
+		}
+
+		return {
+			gameName: game.Name,
+			placeId: game.PlaceId,
+			selectedPath,
+			selectedClass,
+			scriptCount: scripts.size(),
+			topScripts,
+			services,
+		};
 	});
 
-	const topScripts: string[] = [];
-	const limit = math.min(10, scripts.size());
-	for (let i = 0; i < limit; i++) {
-		topScripts.push(scripts[i]);
-	}
-
-	const services: string[] = [];
-	for (const name of ["Workspace", "ServerScriptService", "StarterPlayerScripts", "ReplicatedStorage", "ServerStorage", "StarterGui"] as string[]) {
-		const [ok] = pcall(() => game.GetService(name as keyof Services));
-		if (ok) services.push(name);
-	}
-
-	return {
-		gameName: game.Name,
-		placeId: game.PlaceId,
-		selectedPath: selected ? getInstancePath(selected) : undefined,
-		selectedClass: selected ? selected.ClassName : undefined,
-		scriptCount: scripts.size(),
-		topScripts,
-		services,
-	};
+	if (!success) return { error: tostring(result) };
+	return result as Record<string, unknown>;
 }
 
 function getDeepSnapshot(requestData: Record<string, unknown>) {
@@ -317,17 +331,20 @@ function getDeepSnapshot(requestData: Record<string, unknown>) {
 		node.childCount = children.size();
 		if (depth < maxDepth) {
 			const childNodes: Record<string, unknown>[] = [];
-			pcall(() => {
-				for (const child of children) {
-					childNodes.push(snapshotNode(child, depth + 1));
+			for (const child of children) {
+				const [ok, childNode] = pcall(() => snapshotNode(child, depth + 1));
+				if (ok) {
+					childNodes.push(childNode as Record<string, unknown>);
 				}
-			});
+			}
 			node.children = childNodes;
 		}
 		return node;
 	}
 
-	return snapshotNode(root, 0);
+	const [success, result] = pcall(() => snapshotNode(root, 0));
+	if (!success) return { error: tostring(result) };
+	return result as Record<string, unknown>;
 }
 
 function getSelection(_requestData: Record<string, unknown>) {

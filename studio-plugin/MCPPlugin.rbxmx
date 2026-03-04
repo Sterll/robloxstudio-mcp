@@ -2480,53 +2480,69 @@ local function getTagged(requestData)
 	}
 end
 local function getContext(_requestData)
-	local selection = Selection:Get()
-	local selected = if #selection > 0 then selection[1] else nil
-	local scripts = {}
-	pcall(function()
-		for _, desc in game:GetDescendants() do
-			if desc:IsA("LuaSourceContainer") then
-				local _arg0 = getInstancePath(desc)
-				table.insert(scripts, _arg0)
+	local success, result = pcall(function()
+		local selection = Selection:Get()
+		local selected = if #selection > 0 then selection[1] else nil
+		local scripts = {}
+		pcall(function()
+			for _, desc in game:GetDescendants() do
+				if desc:IsA("LuaSourceContainer") then
+					local _arg0 = getInstancePath(desc)
+					table.insert(scripts, _arg0)
+				end
 			end
-		end
-	end)
-	local topScripts = {}
-	local limit = math.min(10, #scripts)
-	do
-		local i = 0
-		local _shouldIncrement = false
-		while true do
-			if _shouldIncrement then
-				i += 1
-			else
-				_shouldIncrement = true
-			end
-			if not (i < limit) then
-				break
-			end
-			local _arg0 = scripts[i + 1]
-			table.insert(topScripts, _arg0)
-		end
-	end
-	local services = {}
-	for _, name in { "Workspace", "ServerScriptService", "StarterPlayerScripts", "ReplicatedStorage", "ServerStorage", "StarterGui" } do
-		local ok = pcall(function()
-			return game:GetService(name)
 		end)
-		if ok then
-			table.insert(services, name)
+		local topScripts = {}
+		local limit = math.min(10, #scripts)
+		do
+			local i = 0
+			local _shouldIncrement = false
+			while true do
+				if _shouldIncrement then
+					i += 1
+				else
+					_shouldIncrement = true
+				end
+				if not (i < limit) then
+					break
+				end
+				local _arg0 = scripts[i + 1]
+				table.insert(topScripts, _arg0)
+			end
 		end
+		local services = {}
+		for _, name in { "Workspace", "ServerScriptService", "StarterPlayerScripts", "ReplicatedStorage", "ServerStorage", "StarterGui" } do
+			local ok = pcall(function()
+				return game:GetService(name)
+			end)
+			if ok then
+				table.insert(services, name)
+			end
+		end
+		local selectedPath
+		local selectedClass
+		if selected then
+			pcall(function()
+				selectedPath = getInstancePath(selected)
+				selectedClass = selected.ClassName
+			end)
+		end
+		return {
+			gameName = game.Name,
+			placeId = game.PlaceId,
+			selectedPath = selectedPath,
+			selectedClass = selectedClass,
+			scriptCount = #scripts,
+			topScripts = topScripts,
+			services = services,
+		}
+	end)
+	if not success then
+		return {
+			error = tostring(result),
+		}
 	end
-	return {
-		gameName = game.Name,
-		placeId = game.PlaceId,
-		selectedPath = if selected then getInstancePath(selected) else nil,
-		selectedClass = if selected then selected.ClassName else nil,
-		scriptCount = #scripts,
-		topScripts = topScripts,
-		services = services,
-	}
+	return result
 end
 local function getDeepSnapshot(requestData)
 	local instancePath = requestData.path
@@ -2556,17 +2572,27 @@ local function getDeepSnapshot(requestData)
 		node.childCount = #children
 		if depth < maxDepth then
 			local childNodes = {}
-			pcall(function()
-				for _, child in children do
-					local _arg0 = snapshotNode(child, depth + 1)
-					table.insert(childNodes, _arg0)
+			for _, child in children do
+				local ok, childNode = pcall(function()
+					return snapshotNode(child, depth + 1)
+				end)
+				if ok then
+					table.insert(childNodes, childNode)
 				end
-			end)
+			end
 			node.children = childNodes
 		end
 		return node
 	end
-	return snapshotNode(root, 0)
+	local success, result = pcall(function()
+		return snapshotNode(root, 0)
+	end)
+	if not success then
+		return {
+			error = tostring(result),
+		}
+	end
+	return result
 end
 local function getSelection(_requestData)
 	local selection = Selection:Get()

@@ -1482,7 +1482,7 @@ part(0,2,0,2,1,1,"b")`,
   },
   {
     name: 'get_deep_snapshot',
-    description: 'Get full subtree of an object (children + properties) recursively',
+    description: 'Get full subtree of an object (name, class, path, children) recursively',
     category: 'read',
     inputSchema: {
       type: 'object',
