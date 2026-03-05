@@ -2,6 +2,7 @@ import { StudioHttpClient } from './studio-client.js';
 import { BridgeService } from '../bridge-service.js';
 import { runBuildExecutor } from './build-executor.js';
 import { OpenCloudClient } from '../opencloud-client.js';
+import { parseRobloxClass } from './roblox-api-parser.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -1461,5 +1462,31 @@ export class RobloxStudioTools {
   async setCamera(position?: number[], lookAt?: number[], fov?: number) {
     const response = await this.client.request('/api/set-camera', { position, lookAt, fov });
     return { content: [{ type: 'text', text: JSON.stringify(response) }] };
+  }
+
+  async getRobloxApi(className: string) {
+    if (!className) {
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ error: 'className is required' }),
+        }],
+      };
+    }
+    const result = parseRobloxClass(className);
+    if (!result) {
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({ error: `Class "${className}" not found in @rbxts/types` }),
+        }],
+      };
+    }
+    return {
+      content: [{
+        type: 'text' as const,
+        text: JSON.stringify(result, null, 2),
+      }],
+    };
   }
 }

@@ -200,6 +200,9 @@ export class RobloxStudioMCPServer {
           case 'redo':
             return await this.tools.redo();
 
+          case 'get_roblox_api':
+            return await this.tools.getRobloxApi((args as any)?.className as string);
+
           case 'search_assets':
             return await this.tools.searchAssets((args as any)?.assetType as string, (args as any)?.query, (args as any)?.maxResults, (args as any)?.sortBy, (args as any)?.verifiedCreatorsOnly);
           case 'get_asset_details':

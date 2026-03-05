@@ -1719,6 +1719,21 @@ part(0,2,0,2,1,1,"b")`,
       },
     },
   },
+  {
+    name: 'get_roblox_api',
+    description: 'Get the properties, methods and events of a Roblox class from the local @rbxts/types definitions. Use this to know what properties a class supports before creating or modifying instances.',
+    category: 'read' as ToolCategory,
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        className: {
+          type: 'string',
+          description: 'The Roblox class name, e.g. "Sound", "BasePart", "Model", "SpecialMesh"',
+        },
+      },
+      required: ['className'],
+    },
+  },
 ];
 
 export const getReadOnlyTools = () => TOOL_DEFINITIONS.filter(t => t.category === 'read');
